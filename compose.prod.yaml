@@ -1,0 +1,58 @@
+services:
+  app:
+    build: .
+    image: estudante-app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - storage:/app/storage
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "php artisan storage:link --force
+      && php artisan optimize
+      && php artisan migrate --force
+      && exec frankenphp run --config /etc/frankenphp/Caddyfile"
+
+  queue:
+    build: .
+    image: estudante-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: php artisan queue:work --sleep=3 --max-time=3600
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  storage:
+  db:
+  caddy_data:
+  caddy_config:

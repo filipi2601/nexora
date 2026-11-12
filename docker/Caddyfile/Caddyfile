@@ -1,0 +1,12 @@
+{
+	frankenphp
+}
+
+# O domínio vem da variável SERVER_NAME do .env; com um domínio de verdade, o HTTPS é automático
+{$SERVER_NAME:localhost} {
+	root public/
+	encode zstd br gzip
+	php_server {
+		try_files {path} index.php
+	}
+}

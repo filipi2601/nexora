@@ -1,6 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Flame, Clock3, Layers3, CircleHelp } from "lucide-react";
+import {
+    ArrowRight,
+    Flame,
+    Clock3,
+    Layers3,
+    CircleHelp,
+    LifeBuoy,
+} from "lucide-react";
 
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/lib/api";
@@ -56,6 +63,15 @@ function Index() {
                 eyebrow={formattedDate}
                 title={`${getGreeting(new Date())}, ${dashboard?.user.name ?? "estudante"}!`}
                 description="Continue avançando, um conceito de cada vez."
+                action={
+                    <Link
+                        to="/como-usar"
+                        className="-ml-2 inline-flex min-h-10 shrink-0 items-center gap-1.5 px-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+                    >
+                        <LifeBuoy size={16} />
+                        Como usar o app
+                    </Link>
+                }
             />
 
             <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">

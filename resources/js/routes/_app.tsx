@@ -15,6 +15,7 @@ import {
     CircleHelp,
     Bot,
     ChartNoAxesCombined,
+    LifeBuoy,
     Settings,
     LogOut,
     MoreHorizontal,
@@ -91,7 +92,10 @@ const NAV_GROUPS: NavLink[][] = [
         ["/tutor", "Tutor IA", Bot],
         ["/desempenho", "Desempenho", ChartNoAxesCombined],
     ],
-    [["/configuracoes", "Configurações", Settings]],
+    [
+        ["/como-usar", "Como usar", LifeBuoy],
+        ["/configuracoes", "Configurações", Settings],
+    ],
 ];
 
 /** What fits in the bottom bar. */
@@ -108,6 +112,7 @@ const MOBILE_SECONDARY: NavLink[] = [
     ["/questoes", "Questões", CircleHelp],
     ["/tutor", "Tutor IA", Bot],
     ["/desempenho", "Desempenho", ChartNoAxesCombined],
+    ["/como-usar", "Como usar", LifeBuoy],
     ["/configuracoes", "Configurações", Settings],
 ];
 

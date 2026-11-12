@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppBibliotecaRouteImport } from './routes/_app/biblioteca'
+import { Route as AppComoUsarRouteImport } from './routes/_app/como-usar'
 import { Route as AppDesempenhoRouteImport } from './routes/_app/desempenho'
 import { Route as AppEstudarRouteImport } from './routes/_app/estudar'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
@@ -52,6 +53,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppBibliotecaRoute = AppBibliotecaRouteImport.update({
   id: '/biblioteca',
   path: '/biblioteca',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppComoUsarRoute = AppComoUsarRouteImport.update({
+  id: '/como-usar',
+  path: '/como-usar',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDesempenhoRoute = AppDesempenhoRouteImport.update({
@@ -174,6 +180,7 @@ const AppQuestoesPraticarDisciplinaSlugRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/biblioteca': typeof AppBibliotecaRoute
+  '/como-usar': typeof AppComoUsarRoute
   '/desempenho': typeof AppDesempenhoRoute
   '/estudar': typeof AppEstudarRoute
   '/login': typeof AuthLoginRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/biblioteca': typeof AppBibliotecaRoute
+  '/como-usar': typeof AppComoUsarRoute
   '/desempenho': typeof AppDesempenhoRoute
   '/estudar': typeof AppEstudarRoute
   '/login': typeof AuthLoginRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/biblioteca': typeof AppBibliotecaRoute
+  '/_app/como-usar': typeof AppComoUsarRoute
   '/_app/desempenho': typeof AppDesempenhoRoute
   '/_app/estudar': typeof AppEstudarRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/biblioteca'
+    | '/como-usar'
     | '/desempenho'
     | '/estudar'
     | '/login'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/biblioteca'
+    | '/como-usar'
     | '/desempenho'
     | '/estudar'
     | '/login'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/biblioteca'
+    | '/_app/como-usar'
     | '/_app/desempenho'
     | '/_app/estudar'
     | '/_auth/login'
@@ -368,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/biblioteca'
       fullPath: '/biblioteca'
       preLoaderRoute: typeof AppBibliotecaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/como-usar': {
+      id: '/_app/como-usar'
+      path: '/como-usar'
+      fullPath: '/como-usar'
+      preLoaderRoute: typeof AppComoUsarRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/desempenho': {
@@ -529,6 +548,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppBibliotecaRoute: typeof AppBibliotecaRoute
+  AppComoUsarRoute: typeof AppComoUsarRoute
   AppDesempenhoRoute: typeof AppDesempenhoRoute
   AppEstudarRoute: typeof AppEstudarRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -555,6 +575,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBibliotecaRoute: AppBibliotecaRoute,
+  AppComoUsarRoute: AppComoUsarRoute,
   AppDesempenhoRoute: AppDesempenhoRoute,
   AppEstudarRoute: AppEstudarRoute,
   AppIndexRoute: AppIndexRoute,

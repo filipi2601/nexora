@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
     Area,
+    CartesianGrid,
     ComposedChart,
     Line,
     ReferenceLine,
@@ -10,12 +10,17 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import BackLink from "@/components/BackLink";
 import FuzzyChart, {
     breakpoints,
+    CHART,
     trapezoidPoints,
 } from "@/components/FuzzyChart";
 import PageHeader from "@/components/PageHeader";
+import SubjectMark from "@/components/SubjectMark";
 import { api } from "@/lib/api";
+import { priorityStamp } from "@/lib/priority";
+import { useSubjectColors } from "@/lib/subject-colors";
 import type { FuzzyVariable } from "@/types/api";
 
 type RuleCell = { acerto: string; recencia: string; prioridade: string };
@@ -77,10 +82,6 @@ const VARIABLES: Record<string, { title: string; unit: string }> = {
     prioridade: { title: "Prioridade de revisão", unit: "" },
 };
 
-/** Entradas em tons de índigo; a saída nas cores das áreas de atenção (baixa, média, alta). */
-const INPUT_COLORS = ["#a5b4fc", "#6366f1", "#3730a3"];
-const OUTPUT_COLORS = ["#10b981", "#f59e0b", "#ef4444"];
-
 const term = (name: string) => TERM_LABELS[name] ?? name;
 
 const formatNumber = (value: number) =>
@@ -90,6 +91,7 @@ function RouteComponent() {
     const { system, topics } = Route.useLoaderData();
     const { topico } = Route.useSearch();
     const navigate = useNavigate({ from: Route.fullPath });
+    const colors = useSubjectColors();
 
     const selected = topics.find((t) => t.topic_id === topico) ?? topics[0];
     const inputValues: Record<string, number> = selected
@@ -99,88 +101,64 @@ function RouteComponent() {
           }
         : {};
 
+    /** A cor de cada termo da saída: verde (baixa), âmbar (média), vermelho (alta). */
+    const outputColor = (name: string) => {
+        const index = system.output.terms.findIndex((t) => t.name === name);
+        return CHART.output[Math.max(0, index) % CHART.output.length];
+    };
+
     return (
-        <div className="mx-auto max-w-6xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/desempenho"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ChevronLeft size={16} />
-                Voltar
-            </Link>
+        <div className="page">
+            <BackLink to="/desempenho" label="Desempenho" />
             <PageHeader
-                eyebrow="Lógica fuzzy"
                 title="Como a prioridade é calculada"
-                description="Um sistema de inferência de Mamdani: fuzzificar o acerto e a recência, avaliar as regras, agregar e defuzzificar pelo centróide."
+                description="A lógica fuzzy (inferência de Mamdani) combina o quanto você acerta um tópico e há quanto tempo não o pratica para decidir o que revisar primeiro."
             />
 
-            <section className="grid gap-5 lg:grid-cols-3">
-                {[...system.inputs, system.output].map((variable) => {
-                    const isOutput = variable.name === system.output.name;
-
-                    return (
-                        <div
-                            key={variable.name}
-                            className="rounded-3xl border bg-white p-6"
-                        >
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                                {isOutput ? "Saída" : "Entrada"}
+            {selected && (
+                <section
+                    aria-label="Tópico em análise"
+                    className="sheet mb-10 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div className="flex min-w-0 items-center gap-3">
+                        <SubjectMark
+                            name={selected.subject}
+                            color={colors.byName(selected.subject)}
+                        />
+                        <div className="min-w-0">
+                            <p className="truncate text-[17px] font-semibold">
+                                {selected.topic}
                             </p>
-                            <h2 className="mt-1 font-bold">
-                                {VARIABLES[variable.name]?.title ??
-                                    variable.name}
-                            </h2>
-                            <p className="mb-4 text-xs text-slate-400">
-                                de {variable.min} a {variable.max}
-                                {VARIABLES[variable.name]?.unit}
-                            </p>
-                            <FuzzyChart
-                                variable={variable}
-                                colors={isOutput ? OUTPUT_COLORS : INPUT_COLORS}
-                                marker={
-                                    isOutput
-                                        ? selected?.explanation.centroid
-                                        : inputValues[variable.name]
-                                }
-                                formatTerm={term}
-                            />
-                        </div>
-                    );
-                })}
-            </section>
-
-            <section className="mt-5 rounded-3xl border bg-white p-6">
-                <h2 className="font-bold">Base de regras</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                    Cada célula é uma regra: SE acerto é (linha) E recência é
-                    (coluna) ENTÃO prioridade é (célula). As destacadas
-                    dispararam para o tópico escolhido.
-                </p>
-                <RulesMatrix
-                    rows={system.inputs[0].terms.map((t) => t.name)}
-                    columns={system.inputs[1].terms.map((t) => t.name)}
-                    rules={system.rules}
-                    fired={selected?.explanation.rules ?? []}
-                />
-            </section>
-
-            {selected ? (
-                <section className="mt-5 rounded-3xl border bg-white p-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 className="font-bold">Passo a passo</h2>
-                            <p className="mt-1 text-sm text-slate-400">
-                                A inferência de um tópico, nos 4 passos da aula.
+                            <p className="truncate text-[13px] text-muted">
+                                {selected.subject} · {formatNumber(selected.accuracy)}% de
+                                acerto · última prática há{" "}
+                                {formatNumber(selected.days_since_last_attempt)} dias
                             </p>
                         </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <span className="flex items-center gap-2.5">
+                            <span className="figure text-[34px]">
+                                {selected.priority}
+                            </span>
+                            <span
+                                className={`stamp ${priorityStamp(selected.label).className}`}
+                            >
+                                {priorityStamp(selected.label).label}
+                            </span>
+                        </span>
+                        <label className="sr-only" htmlFor="topic-picker">
+                            Escolher outro tópico
+                        </label>
                         <select
+                            id="topic-picker"
                             value={selected.topic_id}
                             onChange={(e) =>
                                 navigate({
                                     search: { topico: Number(e.target.value) },
                                 })
                             }
-                            className="rounded-xl border bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none"
+                            className="field w-full sm:w-auto sm:min-w-80 sm:max-w-md"
                         >
                             {topics.map((t) => (
                                 <option key={t.topic_id} value={t.topic_id}>
@@ -189,124 +167,254 @@ function RouteComponent() {
                             ))}
                         </select>
                     </div>
-
-                    <ol className="mt-6 grid gap-5 lg:grid-cols-2">
-                        <Step step={1} title="Fuzzificação">
-                            {system.inputs.map((variable) => (
-                                <p key={variable.name} className="mb-2 text-sm">
-                                    <b>
-                                        {VARIABLES[variable.name]?.title} ={" "}
-                                        {formatNumber(
-                                            inputValues[variable.name],
-                                        )}
-                                        {VARIABLES[variable.name]?.unit}
-                                    </b>
-                                    :{" "}
-                                    {variable.terms
-                                        .map(
-                                            (t) =>
-                                                `${term(t.name)} ${formatNumber(selected.explanation.fuzzified[variable.name][t.name])}`,
-                                        )
-                                        .join(" · ")}
-                                </p>
-                            ))}
-                        </Step>
-
-                        <Step
-                            step={2}
-                            title="Regras que dispararam (E = mínimo)"
-                        >
-                            <ul className="space-y-2 text-sm">
-                                {selected.explanation.rules
-                                    .filter((rule) => rule.strength > 0)
-                                    .map((rule) => (
-                                        <li
-                                            key={`${rule.acerto}-${rule.recencia}`}
-                                        >
-                                            SE acerto é{" "}
-                                            <b>{term(rule.acerto)}</b> E
-                                            recência é{" "}
-                                            <b>{term(rule.recencia)}</b> ENTÃO
-                                            prioridade é{" "}
-                                            <b>{term(rule.prioridade)}</b>: mín(
-                                            {formatNumber(
-                                                selected.explanation.fuzzified
-                                                    .acerto[rule.acerto],
-                                            )}
-                                            ;{" "}
-                                            {formatNumber(
-                                                selected.explanation.fuzzified
-                                                    .recencia[rule.recencia],
-                                            )}
-                                            ) ={" "}
-                                            <b>{formatNumber(rule.strength)}</b>
-                                        </li>
-                                    ))}
-                            </ul>
-                        </Step>
-
-                        <Step step={3} title="Agregação (máximo por termo)">
-                            <p className="text-sm">
-                                Cada termo da saída fica com o maior grau entre
-                                as regras que levam a ele:{" "}
-                                {system.output.terms
-                                    .map(
-                                        (t) =>
-                                            `${term(t.name)} ${formatNumber(selected.explanation.activation[t.name])}`,
-                                    )
-                                    .join(" · ")}
-                                .
-                            </p>
-                            <p className="mt-2 text-sm text-slate-500">
-                                No gráfico do passo 4, cada termo é cortado
-                                nesse grau e os cortes são unidos (a área azul).
-                            </p>
-                        </Step>
-
-                        <Step step={4} title="Defuzzificação (centróide)">
-                            <AggregatedChart
-                                output={system.output}
-                                explanation={selected.explanation}
-                            />
-                            <p className="mt-3 text-sm">
-                                Centróide Σ z·μ(z) / Σ μ(z) ={" "}
-                                <b className="text-lg">
-                                    {formatNumber(
-                                        selected.explanation.centroid,
-                                    )}
-                                </b>
-                                , que é{" "}
-                                {system.output.terms
-                                    .filter(
-                                        (t) =>
-                                            selected.explanation.output_degrees[
-                                                t.name
-                                            ] > 0,
-                                    )
-                                    .map(
-                                        (t) =>
-                                            `${term(t.name)} com grau ${formatNumber(selected.explanation.output_degrees[t.name])}`,
-                                    )
-                                    .join(" e ")}
-                                : prioridade{" "}
-                                <b>{term(selected.explanation.label)}</b>.
-                            </p>
-                        </Step>
-                    </ol>
-                </section>
-            ) : (
-                <section className="mt-5 rounded-3xl border border-dashed bg-white p-10 text-center">
-                    <h2 className="font-bold">Nenhum tópico praticado ainda</h2>
-                    <p className="mt-1 text-sm text-slate-400">
-                        Responda questões para ver o cálculo da prioridade de um
-                        tópico, passo a passo.
-                    </p>
                 </section>
             )}
+
+            <section aria-labelledby="variables">
+                <h2 id="variables" className="section-title">
+                    As variáveis
+                </h2>
+                <p className="mt-1 mb-4 max-w-[65ch] text-sm text-muted">
+                    Cada variável é dividida em termos que se sobrepõem. A linha
+                    vertical tracejada marca o valor do tópico em análise.
+                </p>
+                <div className="grid gap-4 lg:grid-cols-3">
+                    {[...system.inputs, system.output].map((variable) => {
+                        const isOutput = variable.name === system.output.name;
+                        const value = isOutput
+                            ? selected?.explanation.centroid
+                            : inputValues[variable.name];
+
+                        return (
+                            <div key={variable.name} className="sheet p-5">
+                                <h3 className="text-[17px] font-semibold">
+                                    {VARIABLES[variable.name]?.title ??
+                                        variable.name}
+                                </h3>
+                                <p className="mb-4 text-[13px] text-muted">
+                                    {isOutput ? "Saída" : "Entrada"}, de{" "}
+                                    {variable.min} a {variable.max}
+                                    {VARIABLES[variable.name]?.unit}
+                                    {value !== undefined && (
+                                        <>
+                                            {" "}
+                                            · neste tópico:{" "}
+                                            <b className="font-bold text-ink">
+                                                {formatNumber(value)}
+                                                {VARIABLES[variable.name]?.unit}
+                                            </b>
+                                        </>
+                                    )}
+                                </p>
+                                <FuzzyChart
+                                    variable={variable}
+                                    colors={
+                                        isOutput
+                                            ? [...CHART.output]
+                                            : [...CHART.inputs]
+                                    }
+                                    marker={value}
+                                    formatTerm={term}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section aria-labelledby="rules" className="mt-12">
+                <h2 id="rules" className="section-title">
+                    Base de regras
+                </h2>
+                <p className="mt-1 mb-4 max-w-[65ch] text-sm text-muted">
+                    Cada célula é uma regra: SE acerto é (linha) E recência é
+                    (coluna) ENTÃO prioridade é (célula). As células com contorno
+                    dispararam para o tópico em análise.
+                </p>
+                <RulesMatrix
+                    rows={system.inputs[0].terms.map((t) => t.name)}
+                    columns={system.inputs[1].terms.map((t) => t.name)}
+                    rules={system.rules}
+                    fired={selected?.explanation.rules ?? []}
+                    outputColor={outputColor}
+                />
+            </section>
+
+            <section aria-labelledby="steps" className="mt-12">
+                <h2 id="steps" className="section-title">
+                    Passo a passo
+                </h2>
+
+                {selected ? (
+                    <>
+                        <p className="mt-1 mb-4 max-w-[65ch] text-sm text-muted">
+                            A inferência do tópico em análise, nos 4 passos da
+                            aula.
+                        </p>
+                        <ol className="grid gap-4 lg:grid-cols-2">
+                            <Step step={1} title="Fuzzificação">
+                                <dl className="space-y-3">
+                                    {system.inputs.map((variable) => (
+                                        <div key={variable.name}>
+                                            <dt className="font-semibold text-ink">
+                                                {VARIABLES[variable.name]?.title} ={" "}
+                                                {formatNumber(
+                                                    inputValues[variable.name],
+                                                )}
+                                                {VARIABLES[variable.name]?.unit}
+                                            </dt>
+                                            <dd className="tabular mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                                                {variable.terms.map((t) => (
+                                                    <span key={t.name}>
+                                                        {term(t.name)}{" "}
+                                                        <b className="font-semibold text-ink">
+                                                            {formatNumber(
+                                                                selected.explanation
+                                                                    .fuzzified[
+                                                                    variable.name
+                                                                ][t.name],
+                                                            )}
+                                                        </b>
+                                                    </span>
+                                                ))}
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </Step>
+
+                            <Step
+                                step={2}
+                                title="Regras que dispararam (E = mínimo)"
+                            >
+                                <ul className="divide-y divide-rule-soft">
+                                    {selected.explanation.rules
+                                        .filter((rule) => rule.strength > 0)
+                                        .map((rule) => (
+                                            <li
+                                                key={`${rule.acerto}-${rule.recencia}`}
+                                                className="tabular py-2 first:pt-0 last:pb-0"
+                                            >
+                                                SE acerto é{" "}
+                                                <b className="text-ink">
+                                                    {term(rule.acerto)}
+                                                </b>{" "}
+                                                E recência é{" "}
+                                                <b className="text-ink">
+                                                    {term(rule.recencia)}
+                                                </b>{" "}
+                                                ENTÃO prioridade é{" "}
+                                                <b className="text-ink">
+                                                    {term(rule.prioridade)}
+                                                </b>
+                                                : mín(
+                                                {formatNumber(
+                                                    selected.explanation.fuzzified
+                                                        .acerto[rule.acerto],
+                                                )}
+                                                ;{" "}
+                                                {formatNumber(
+                                                    selected.explanation.fuzzified
+                                                        .recencia[rule.recencia],
+                                                )}
+                                                ) ={" "}
+                                                <b className="text-ink">
+                                                    {formatNumber(rule.strength)}
+                                                </b>
+                                            </li>
+                                        ))}
+                                </ul>
+                            </Step>
+
+                            <Step step={3} title="Agregação (máximo por termo)">
+                                <p>
+                                    Cada termo da saída fica com o maior grau
+                                    entre as regras que levam a ele:
+                                </p>
+                                <ul className="tabular mt-3 flex flex-wrap gap-x-5 gap-y-1">
+                                    {system.output.terms.map((t) => (
+                                        <li
+                                            key={t.name}
+                                            className="flex items-center gap-1.5"
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                className="inline-block h-2.5 w-2.5 rounded-[2px]"
+                                                style={{
+                                                    backgroundColor: outputColor(
+                                                        t.name,
+                                                    ),
+                                                }}
+                                            />
+                                            {term(t.name)}{" "}
+                                            <b className="font-semibold text-ink">
+                                                {formatNumber(
+                                                    selected.explanation.activation[
+                                                        t.name
+                                                    ],
+                                                )}
+                                            </b>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="mt-3 text-muted">
+                                    No gráfico do passo 4, cada termo é cortado
+                                    nesse grau e os cortes são unidos (a área
+                                    preenchida).
+                                </p>
+                            </Step>
+
+                            <Step step={4} title="Defuzzificação (centróide)">
+                                <AggregatedChart
+                                    output={system.output}
+                                    explanation={selected.explanation}
+                                />
+                                <p className="tabular mt-3">
+                                    Centróide Σ z·μ(z) / Σ μ(z) ={" "}
+                                    <b className="figure text-[22px] font-bold text-ink">
+                                        {formatNumber(
+                                            selected.explanation.centroid,
+                                        )}
+                                    </b>
+                                    , que é{" "}
+                                    {system.output.terms
+                                        .filter(
+                                            (t) =>
+                                                selected.explanation
+                                                    .output_degrees[t.name] > 0,
+                                        )
+                                        .map(
+                                            (t) =>
+                                                `${term(t.name)} com grau ${formatNumber(selected.explanation.output_degrees[t.name])}`,
+                                        )
+                                        .join(" e ")}
+                                    . Prioridade{" "}
+                                    <span
+                                        className={`stamp ${priorityStamp(selected.explanation.label).className}`}
+                                    >
+                                        {priorityStamp(selected.explanation.label).label}
+                                    </span>
+                                </p>
+                            </Step>
+                        </ol>
+                    </>
+                ) : (
+                    <div className="sheet mt-4 p-8">
+                        <p className="font-semibold">
+                            Nenhum tópico praticado ainda
+                        </p>
+                        <p className="mt-1 text-[15px] text-ink-soft">
+                            Responda questões para ver o cálculo da prioridade
+                            de um tópico, passo a passo.
+                        </p>
+                    </div>
+                )}
+            </section>
         </div>
     );
 }
 
+/** Um dos 4 passos: o número carrega a ordem da inferência. */
 function Step({
     step,
     title,
@@ -317,12 +425,22 @@ function Step({
     children: ReactNode;
 }) {
     return (
-        <li className="rounded-2xl bg-slate-50 p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">
-                Passo {step}
-            </p>
-            <h3 className="mt-1 mb-3 font-bold">{title}</h3>
-            {children}
+        <li className="sheet flex gap-4 p-5">
+            <span
+                aria-hidden="true"
+                className="figure w-6 shrink-0 text-[34px] text-muted"
+            >
+                {step}
+            </span>
+            <div className="min-w-0 flex-1">
+                <h3 className="text-[17px] font-semibold">
+                    <span className="sr-only">Passo {step}: </span>
+                    {title}
+                </h3>
+                <div className="mt-3 text-[15px] leading-6 text-ink-soft">
+                    {children}
+                </div>
+            </div>
         </li>
     );
 }
@@ -332,25 +450,31 @@ function RulesMatrix({
     columns,
     rules,
     fired,
+    outputColor,
 }: {
     rows: string[];
     columns: string[];
     rules: RuleCell[];
     fired: (RuleCell & { strength: number })[];
+    outputColor: (name: string) => string;
 }) {
     const find = <T extends RuleCell>(list: T[], row: string, column: string) =>
         list.find((rule) => rule.acerto === row && rule.recencia === column);
 
     return (
-        <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[420px] text-sm">
+        <div className="sheet overflow-x-auto">
+            <table className="w-full table-fixed border-collapse text-[14px] sm:text-[15px]">
                 <thead>
-                    <tr className="text-xs text-slate-400">
-                        <th className="p-2 text-left font-medium">
-                            acerto \ recência
+                    <tr className="border-b border-rule-soft text-[13px] text-muted">
+                        <th scope="col" className="w-[4.75rem] px-3 py-3 text-left font-semibold sm:w-[26%] sm:px-4">
+                            Acerto \ Recência
                         </th>
                         {columns.map((column) => (
-                            <th key={column} className="p-2 font-medium">
+                            <th
+                                key={column}
+                                scope="col"
+                                className="px-2 py-3 text-left font-semibold"
+                            >
                                 {term(column)}
                             </th>
                         ))}
@@ -358,39 +482,46 @@ function RulesMatrix({
                 </thead>
                 <tbody>
                     {rows.map((row) => (
-                        <tr key={row} className="border-t">
-                            <th className="p-2 text-left font-medium text-slate-500">
+                        <tr key={row} className="border-b border-rule-soft last:border-0">
+                            <th
+                                scope="row"
+                                className="px-3 py-2 text-left font-semibold text-ink sm:px-4"
+                            >
                                 {term(row)}
                             </th>
                             {columns.map((column) => {
                                 const strength =
                                     find(fired, row, column)?.strength ?? 0;
+                                const consequent =
+                                    find(rules, row, column)?.prioridade ?? "";
 
                                 return (
-                                    <td
-                                        key={column}
-                                        className="p-2 text-center"
-                                    >
-                                        <span
-                                            className={`inline-flex min-w-24 flex-col rounded-xl px-3 py-2 ${
+                                    <td key={column} className="p-1 sm:p-1.5">
+                                        <div
+                                            className={`flex min-h-16 flex-col justify-center rounded px-2 py-2 sm:px-3 ${
                                                 strength > 0
-                                                    ? "bg-indigo-50 ring-2 ring-indigo-400"
-                                                    : "bg-slate-50"
+                                                    ? "bg-sheet ring-2 ring-ink ring-inset"
+                                                    : "bg-paper"
                                             }`}
                                         >
-                                            <span className="font-semibold">
-                                                {term(
-                                                    find(rules, row, column)
-                                                        ?.prioridade ?? "",
-                                                )}
+                                            <span className="flex items-center gap-1.5 font-semibold text-ink">
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="inline-block h-2.5 w-2.5 rounded-[2px]"
+                                                    style={{
+                                                        backgroundColor:
+                                                            outputColor(consequent),
+                                                    }}
+                                                />
+                                                {term(consequent)}
                                             </span>
                                             {strength > 0 && (
-                                                <span className="text-xs text-indigo-700">
-                                                    grau{" "}
+                                                <span className="tabular text-[13px] text-ink-soft">
+                                                    <span className="hidden sm:inline">disparou com </span>grau{" "}
                                                     {formatNumber(strength)}
                                                 </span>
                                             )}
-                                        </span>
+                                        </div>
                                     </td>
                                 );
                             })}
@@ -404,7 +535,7 @@ function RulesMatrix({
 
 /**
  * O conjunto de saída agregado (área), sobre as funções da prioridade (tracejadas),
- * com a linha do centróide — a figura dos slides 39 a 41.
+ * com a linha do centróide.
  */
 function AggregatedChart({
     output,
@@ -419,21 +550,24 @@ function AggregatedChart({
                 <ComposedChart
                     margin={{ top: 8, right: 12, bottom: 0, left: -24 }}
                 >
+                    <CartesianGrid stroke={CHART.grid} vertical={false} />
                     <XAxis
                         type="number"
                         dataKey="x"
                         domain={[output.min, output.max]}
                         ticks={breakpoints(output)}
-                        axisLine={false}
+                        axisLine={{ stroke: CHART.axis }}
                         tickLine={false}
-                        fontSize={11}
+                        tick={{ fill: CHART.text, fontSize: 12 }}
+                        tickMargin={6}
                     />
                     <YAxis
                         domain={[0, 1]}
                         ticks={[0, 0.5, 1]}
                         axisLine={false}
                         tickLine={false}
-                        fontSize={11}
+                        tick={{ fill: CHART.text, fontSize: 12 }}
+                        tickFormatter={(value) => String(value).replace(".", ",")}
                     />
                     {output.terms.map((t, index) => (
                         <Line
@@ -441,9 +575,9 @@ function AggregatedChart({
                             data={trapezoidPoints(t.points)}
                             dataKey="y"
                             type="linear"
-                            stroke={OUTPUT_COLORS[index % OUTPUT_COLORS.length]}
+                            stroke={CHART.output[index % CHART.output.length]}
                             strokeDasharray="3 3"
-                            strokeWidth={1}
+                            strokeWidth={1.25}
                             dot={false}
                             isAnimationActive={false}
                         />
@@ -455,15 +589,17 @@ function AggregatedChart({
                         }))}
                         dataKey="y"
                         type="linear"
-                        stroke="#4f46e5"
-                        fill="#6366f1"
-                        fillOpacity={0.25}
+                        stroke={CHART.ink}
+                        strokeWidth={1.5}
+                        fill={CHART.ink}
+                        fillOpacity={0.12}
                         isAnimationActive={false}
                     />
                     <ReferenceLine
                         x={explanation.centroid}
-                        stroke="#0f172a"
-                        strokeDasharray="4 4"
+                        stroke={CHART.marker}
+                        strokeWidth={1.5}
+                        strokeDasharray="4 3"
                     />
                 </ComposedChart>
             </ResponsiveContainer>

@@ -1,8 +1,13 @@
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
+import SubjectBand from "@/components/SubjectBand";
+import { SessionCounter } from "@/components/QuestionPractice";
+import SubjectMark from "@/components/SubjectMark";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, ChevronLeft, RotateCw } from "lucide-react";
+import { ArrowRight, RotateCw } from "lucide-react";
 import { useState } from "react";
 import type { Flashcard, Subject } from "@/types/api";
 
@@ -18,11 +23,11 @@ export const Route = createFileRoute("/_app/flashcards/revisar/$slug")({
     component: RouteComponent,
 });
 
-const ratings: { key: Rating; label: string; color: string }[] = [
-    { key: "again", label: "Novamente", color: "text-red-500" },
-    { key: "hard", label: "Difícil", color: "text-amber-500" },
-    { key: "good", label: "Bom", color: "text-slate-700" },
-    { key: "easy", label: "Fácil", color: "text-emerald-600" },
+const ratings: { key: Rating; label: string }[] = [
+    { key: "again", label: "Novamente" },
+    { key: "hard", label: "Difícil" },
+    { key: "good", label: "Bom" },
+    { key: "easy", label: "Fácil" },
 ];
 
 function RouteComponent() {
@@ -31,6 +36,7 @@ function RouteComponent() {
         subjects: Subject[];
         slug: string;
     };
+    const colors = useSubjectColors();
     const [idx, setIdx] = useState(0);
     const [flipped, setFlipped] = useState(false);
     const [done, setDone] = useState(false);
@@ -49,12 +55,10 @@ function RouteComponent() {
 
     const meta = subject
         ? {
-              eyebrow: "Revisão espaçada",
               title: subject.name,
               description: `Revise ${cards.length} flashcards.`,
           }
         : {
-              eyebrow: "Revisão espaçada",
               title: "Revisão geral",
               description: `Revise ${cards.length} flashcards de todas as disciplinas.`,
           };
@@ -73,17 +77,13 @@ function RouteComponent() {
 
     if (cards.length === 0) {
         return (
-            <div className="mx-auto max-w-2xl p-5 sm:p-8 lg:p-12">
-                <Link
-                    to="/flashcards"
-                    className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-                >
-                    <ChevronLeft size={16} />
-                    Voltar
-                </Link>
-                <div className="rounded-3xl border bg-white p-10 text-center">
-                    <h2 className="text-xl font-bold">Nenhum card pendente</h2>
-                    <p className="mt-2 text-sm text-slate-400">
+            <div className="page page-narrow">
+                <BackLink to="/flashcards" />
+                <div className="sheet p-6 sm:p-8">
+                    <h2 className="text-[17px] font-semibold">
+                        Nenhum card pendente
+                    </h2>
+                    <p className="mt-1 text-[15px] text-ink-soft">
                         Você já revisou tudo por aqui. Volte mais tarde.
                     </p>
                 </div>
@@ -93,48 +93,46 @@ function RouteComponent() {
 
     if (done) {
         return (
-            <div className="mx-auto max-w-2xl p-5 sm:p-8 lg:p-12">
-                <Link
-                    to="/flashcards"
-                    className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-                >
-                    <ChevronLeft size={16} />
-                    Voltar
-                </Link>
-                <div className="rounded-3xl border bg-white p-10 text-center">
-                    <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-                        <CheckCircle2 size={32} />
-                    </div>
-                    <p className="mt-5 text-sm font-bold text-indigo-600">
-                        SESSÃO CONCLUÍDA
-                    </p>
-                    <h2 className="mt-3 text-2xl font-bold">
-                        Revimos {cards.length} cards
+            <div className="page page-narrow">
+                <BackLink to="/flashcards" />
+                <section className="sheet p-6 sm:p-8">
+                    <span className="stamp stamp-ok">Sessão concluída</span>
+                    <h2 className="mt-4 text-[17px] leading-8 text-ink-soft">
+                        Revimos{" "}
+                        <span className="figure text-[34px] text-ink">
+                            {cards.length}
+                        </span>{" "}
+                        cards
                     </h2>
-                    <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3 text-left">
+                    <dl className="mt-6 grid grid-cols-2 border-t border-rule-soft sm:grid-cols-4">
                         {ratings.map((r) => (
                             <div
                                 key={r.key}
-                                className="flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm font-semibold"
+                                className="flex items-baseline justify-between gap-3 border-b border-rule-soft py-3 pr-4 sm:flex-col sm:items-start sm:gap-1 sm:border-b-0"
                             >
-                                <span>{r.label}</span>
-                                <span className={r.color}>{counts[r.key]}</span>
+                                <dt className="text-sm text-muted">
+                                    {r.label}
+                                </dt>
+                                <dd className="figure text-[24px] text-ink">
+                                    {counts[r.key]}
+                                </dd>
                             </div>
                         ))}
-                    </div>
-                    <Link
-                        to="/flashcards"
-                        className="mt-7 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
-                    >
+                    </dl>
+                    <Link to="/flashcards" className="btn btn-primary mt-6">
                         Concluir
-                        <ArrowRight size={17} />
+                        <ArrowRight size={16} aria-hidden="true" />
                     </Link>
-                </div>
+                </section>
             </div>
         );
     }
 
     const card = cards[idx];
+    const cardColor = colors.byId(card.subject_id);
+    const cardSubjectName = (
+        subject ?? data.subjects.find((s) => s.id === card.subject_id)
+    )?.name;
 
     const advance = async (rating: Rating) => {
         try {
@@ -154,79 +152,125 @@ function RouteComponent() {
         }
     };
 
+    const faceClass =
+        "absolute inset-0 flex flex-col overflow-hidden rounded border border-rule bg-sheet text-left";
+
     return (
-        <div className="mx-auto max-w-2xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/flashcards"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ChevronLeft size={16} />
-                Voltar
-            </Link>
-            <PageHeader {...meta} />
-            <p className="mb-4 text-sm font-bold text-indigo-600">
-                {idx + 1} DE {cards.length}
-            </p>
+        <div className="page page-narrow">
+            <BackLink to="/flashcards" />
+            {subject ? (
+                <SubjectBand
+                    color={colors.byId(subject.id)}
+                    title={meta.title}
+                    description={meta.description}
+                />
+            ) : (
+                <PageHeader {...meta} />
+            )}
+            <SessionCounter
+                current={idx + 1}
+                total={cards.length}
+                color={subject ? colors.byId(subject.id) : undefined}
+                label="Cards revisados"
+            />
             <div style={{ perspective: "1400px" }}>
                 <button
+                    type="button"
                     onClick={() => setFlipped((f) => !f)}
-                    className="relative block h-72 w-full cursor-pointer transition-transform duration-500"
+                    className="relative block h-80 w-full cursor-pointer transition-transform duration-500 ease-out motion-reduce:transition-none"
                     style={{
                         transformStyle: "preserve-3d",
                         transform: flipped ? "rotateY(180deg)" : "none",
                     }}
                 >
                     <div
-                        className="absolute inset-0 grid place-items-center rounded-3xl border bg-white p-8 text-center shadow-sm"
+                        className={faceClass}
                         style={{ backfaceVisibility: "hidden" }}
+                        aria-hidden={flipped}
                     >
-                        <p className="text-sm font-bold uppercase tracking-widest text-indigo-500">
-                            Pergunta
-                        </p>
-                        <h2 className="mt-4 text-2xl font-bold text-slate-900">
-                            {card.front}
-                        </h2>
-                        <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400">
-                            <RotateCw size={13} />
+                        <CardHeader
+                            side="Pergunta"
+                            subjectName={cardSubjectName}
+                            color={cardColor}
+                        />
+                        <div className="flex flex-1 items-center overflow-y-auto px-6 py-6 sm:px-10">
+                            <p className="font-display text-[28px] leading-tight font-semibold text-ink sm:text-[34px]">
+                                {card.front}
+                            </p>
+                        </div>
+                        <p className="flex items-center gap-1.5 px-6 pb-4 text-[13px] text-muted sm:px-10">
+                            <RotateCw
+                                size={14}
+                                strokeWidth={1.75}
+                                aria-hidden="true"
+                            />
                             Toque para virar
                         </p>
                     </div>
                     <div
-                        className="absolute inset-0 grid place-items-center rounded-3xl border bg-indigo-50 p-8 text-center shadow-sm"
+                        className={faceClass}
                         style={{
                             backfaceVisibility: "hidden",
                             transform: "rotateY(180deg)",
                         }}
+                        aria-hidden={!flipped}
                     >
-                        <p className="text-sm font-bold uppercase tracking-widest text-indigo-500">
-                            Resposta
-                        </p>
-                        <h2 className="mx-auto mt-4 max-w-md text-xl font-bold text-slate-900">
-                            {card.back}
-                        </h2>
+                        <CardHeader
+                            side="Resposta"
+                            subjectName={cardSubjectName}
+                            color={cardColor}
+                        />
+                        <div className="flex flex-1 items-center overflow-y-auto px-6 py-6 sm:px-10">
+                            <p className="max-w-[60ch] text-[18px] leading-8 text-ink-soft">
+                                {card.back}
+                            </p>
+                        </div>
                     </div>
                 </button>
             </div>
             {flipped && (
                 <div className="mt-6">
-                    <p className="mb-3 text-center text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    <p className="mb-3 text-[15px] text-ink-soft">
                         Quão bem você sabia?
                     </p>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {ratings.map((r) => (
                             <button
                                 key={r.key}
+                                type="button"
                                 disabled={reviewMutation.isPending}
                                 onClick={() => advance(r.key)}
-                                className="rounded-xl border bg-white py-3 text-sm font-bold transition-colors hover:border-indigo-400 hover:bg-indigo-50 disabled:opacity-50"
+                                className="btn btn-secondary"
                             >
-                                <span className={r.color}>
-                                    {reviewMutation.isPending ? "..." : r.label}
-                                </span>
+                                {reviewMutation.isPending ? "..." : r.label}
                             </button>
                         ))}
                     </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+function CardHeader({
+    side,
+    subjectName,
+    color,
+}: {
+    side: string;
+    subjectName?: string;
+    color: string;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-3 border-b border-rule px-6 py-3 sm:px-10">
+            <span className="text-[13px] font-semibold text-ink-soft">
+                {side}
+            </span>
+            {subjectName && (
+                <span className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
+                    <span className="truncate">{subjectName}</span>
+                    <SubjectMark name={subjectName} color={color} size="sm" />
+                </span>
             )}
         </div>
     );

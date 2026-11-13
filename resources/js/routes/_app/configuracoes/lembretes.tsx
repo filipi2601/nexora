@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Bell, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/lib/api";
 
@@ -76,8 +77,8 @@ function RouteComponent() {
 
     if (loading) {
         return (
-            <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-                <div className="rounded-3xl border bg-white p-6">
+            <div className="page page-narrow">
+                <div className="sheet p-6 text-[15px] text-ink-soft">
                     Carregando configurações...
                 </div>
             </div>
@@ -85,109 +86,93 @@ function RouteComponent() {
     }
 
     return (
-        <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-            <button
-                type="button"
-                onClick={() =>
-                    navigate({
-                        to: "/configuracoes",
-                    })
-                }
-                className="-mt-2 mb-3 -ml-2 flex min-h-10 cursor-pointer items-center gap-2 px-2 text-sm text-slate-500 transition hover:text-slate-900"
-            >
-                <ArrowLeft size={16} />
-                Voltar para configurações
-            </button>
+        <div className="page page-narrow">
+            <BackLink to="/configuracoes" label="Voltar para configurações" />
 
             <PageHeader
-                eyebrow="Preferências de estudo"
                 title="Lembretes de estudo"
                 description="Escolha se deseja receber lembretes para estudar."
             />
 
             <form
                 onSubmit={handleSubmit}
-                className="space-y-6"
+                className="sheet"
             >
-                <div className="rounded-3xl border bg-white p-6">
-                    <div className="flex items-start gap-4">
-                        <div className="rounded-xl bg-slate-50 p-3">
-                            <Bell size={20} />
+                <div className="p-6">
+                    <div className="flex items-start justify-between gap-6">
+                        <div>
+                            <h2
+                                id="daily-reminder"
+                                className="section-title"
+                            >
+                                Lembrete diário
+                            </h2>
+
+                            <p className="mt-1 text-sm text-muted">
+                                Receba um lembrete para manter sua rotina de estudos.
+                            </p>
                         </div>
 
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between gap-4">
-                                <div>
-                                    <h2 className="font-semibold">
-                                        Lembrete diário
-                                    </h2>
-
-                                    <p className="mt-1 text-sm text-slate-400">
-                                        Receba um lembrete para manter sua rotina de estudos.
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    role="switch"
-                                    aria-checked={enabled}
-                                    onClick={() =>
-                                        setEnabled(!enabled)
-                                    }
-                                    className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition ${
-                                        enabled
-                                            ? "bg-slate-900"
-                                            : "bg-slate-300"
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
-                                            enabled
-                                                ? "left-6"
-                                                : "left-1"
-                                        }`}
-                                    />
-                                </button>
-                            </div>
-
-                            {enabled && (
-                                <div className="mt-6">
-                                    <label
-                                        htmlFor="reminder-time"
-                                        className="mb-2 block text-sm font-medium"
-                                    >
-                                        Horário
-                                    </label>
-
-                                    <input
-                                        id="reminder-time"
-                                        type="time"
-                                        value={time}
-                                        onChange={(event) =>
-                                            setTime(
-                                                event.target.value
-                                            )
-                                        }
-                                        className="rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                                    />
-
-                                    <p className="mt-2 text-xs text-slate-400">
-                                        O lembrete será configurado para
-                                        todos os dias neste horário.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={enabled}
+                            aria-labelledby="daily-reminder"
+                            onClick={() =>
+                                setEnabled(!enabled)
+                            }
+                            className={`relative mt-1 h-6 w-11 shrink-0 cursor-pointer rounded transition-colors ${
+                                enabled
+                                    ? "bg-ink"
+                                    : "bg-rule-strong"
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-1 h-4 w-4 rounded-sm bg-white transition-[left] ${
+                                    enabled
+                                        ? "left-6"
+                                        : "left-1"
+                                }`}
+                            />
+                        </button>
                     </div>
+
+                    {enabled && (
+                        <div className="mt-6 border-t border-rule-soft pt-6">
+                            <label
+                                htmlFor="reminder-time"
+                                className="field-label"
+                            >
+                                Horário
+                            </label>
+
+                            <input
+                                id="reminder-time"
+                                type="time"
+                                value={time}
+                                onChange={(event) =>
+                                    setTime(
+                                        event.target.value
+                                    )
+                                }
+                                className="field w-40"
+                            />
+
+                            <p className="field-hint">
+                                O lembrete será configurado para
+                                todos os dias neste horário.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end border-t border-rule-soft px-6 py-4">
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="btn btn-primary"
                     >
-                        <Save size={16} />
+                        <Save size={16} aria-hidden="true" />
 
                         {saving
                             ? "Salvando..."

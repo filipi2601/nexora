@@ -1,23 +1,19 @@
 export default function PageLoading() {
     return (
-        <div
-            role="status"
-            aria-live="polite"
-            className="mx-auto max-w-5xl animate-pulse p-5 sm:p-8 lg:p-12"
-        >
+        <div role="status" aria-live="polite" className="page animate-pulse">
             <span className="sr-only">Carregando...</span>
 
             <div className="mb-8 space-y-3">
-                <div className="h-3 w-28 rounded-full bg-slate-200" />
-                <div className="h-9 w-64 rounded-xl bg-slate-200" />
-                <div className="h-4 w-full max-w-md rounded-full bg-slate-100" />
+                <div className="h-10 w-72 max-w-full rounded bg-rule-soft" />
+                <div className="h-4 w-96 max-w-full rounded bg-rule-soft" />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="h-40 rounded-3xl border bg-white" />
-                <div className="h-40 rounded-3xl border bg-white" />
+            <div className="sheet h-36" />
+            <div className="sheet mt-6 divide-y divide-rule-soft">
+                <div className="h-16" />
+                <div className="h-16" />
+                <div className="h-16" />
             </div>
-            <div className="mt-4 h-24 rounded-3xl border bg-white" />
         </div>
     );
 }

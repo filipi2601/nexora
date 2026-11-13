@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileText, Search, X } from "lucide-react";
+import { FileText, Plus, Search, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import SubjectMark from "@/components/SubjectMark";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 import {
     Dialog,
     DialogContent,
@@ -25,12 +27,27 @@ type Material = {
     status: string;
 };
 
-/** Minúsculas e sem acentos, para "logica" encontrar "Lógica". */
 const normalize = (text: string) =>
     text
         .normalize("NFD")
         .replace(/\p{Diacritic}/gu, "")
         .toLowerCase();
+
+const materialStatus = (status: string): { label: string; className: string } => {
+    if (status === "ready") {
+        return { label: "Pronto", className: "stamp-ok" };
+    }
+
+    if (status === "failed") {
+        return { label: "Falha ao processar", className: "stamp-error" };
+    }
+
+    if (status === "processing") {
+        return { label: "Processando...", className: "stamp-wait" };
+    }
+
+    return { label: "Na fila...", className: "stamp-wait" };
+};
 
 function RouteComponent() {
     const { data: subjects } = useQuery({
@@ -65,6 +82,7 @@ function RouteComponent() {
     const [subjectId, setSubjectId] = useState("");
 
     const queryClient = useQueryClient();
+    const colors = useSubjectColors();
 
     const uploadMutation = useMutation({
         mutationFn: async ({
@@ -142,33 +160,40 @@ function RouteComponent() {
     };
 
     return (
-        <div className="mx-auto max-w-6xl p-5 sm:p-8 lg:p-12">
+        <div className="page">
             <PageHeader
-                eyebrow="Seus materiais"
                 title="Biblioteca"
                 description="Documentos que dão origem às suas experiências de aprendizagem."
                 action={
                     <button
+                        type="button"
                         onClick={() => setIsUploadOpen(true)}
                         disabled={uploadMutation.isPending}
-                        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+                        className="btn btn-primary"
                     >
+                        <Plus size={16} strokeWidth={1.75} aria-hidden="true" />
                         Adicionar material
                     </button>
                 }
             />
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label className="flex flex-1 cursor-text items-center gap-3 rounded-xl border bg-white px-4 py-3 text-slate-400">
-                    <Search size={18} />
+
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                    <Search
+                        size={16}
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
+                    />
                     <input
                         type="search"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Pesquisar materiais..."
                         aria-label="Pesquisar materiais"
-                        className="w-full bg-transparent text-sm text-slate-700 outline-none"
+                        className="field pl-9"
                     />
-                </label>
+                </div>
                 {subjects && subjects.length > 0 && (
                     <select
                         value={subjectFilter}
@@ -179,7 +204,8 @@ function RouteComponent() {
                                     : Number(e.target.value),
                             )
                         }
-                        className="rounded-xl border bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none"
+                        aria-label="Filtrar por disciplina"
+                        className="field sm:w-64"
                     >
                         <option value="all">Todas as disciplinas</option>
                         {subjects.map((s: { id: number; name: string }) => (
@@ -190,114 +216,116 @@ function RouteComponent() {
                     </select>
                 )}
             </div>
+
             {isLoading ? (
-                <p className="text-sm text-slate-400">
-                    Carregando materiais...
-                </p>
+                <p className="text-sm text-muted">Carregando materiais...</p>
             ) : !materials?.length ? (
-                <div className="rounded-3xl border border-dashed bg-white p-12 text-center">
-                    <FileText className="mx-auto text-slate-300" size={38} />
-                    <h2 className="mt-4 font-bold">
-                        Sua biblioteca está vazia
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-400">
-                        Adicione seu primeiro material para começar.
+                <div className="sheet flex flex-wrap items-center justify-between gap-4 p-6">
+                    <p className="flex items-center gap-3 text-[15px] text-ink-soft">
+                        <FileText
+                            size={18}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                            className="shrink-0 text-muted"
+                        />
+                        Sua biblioteca está vazia. Adicione seu primeiro
+                        material para começar.
                     </p>
+                    <button
+                        type="button"
+                        onClick={() => setIsUploadOpen(true)}
+                        disabled={uploadMutation.isPending}
+                        className="btn btn-secondary"
+                    >
+                        Adicionar material
+                    </button>
                 </div>
             ) : filteredMaterials.length === 0 ? (
-                <div className="rounded-3xl border border-dashed bg-white p-12 text-center">
-                    <Search className="mx-auto text-slate-300" size={38} />
-                    <h2 className="mt-4 font-bold">
-                        Nenhum material encontrado
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-400">
-                        Tente outro termo ou outra disciplina.
-                    </p>
+                <div className="sheet p-6 text-[15px] text-ink-soft">
+                    Nenhum material encontrado. Tente outro termo ou outra
+                    disciplina.
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                    {filteredMaterials.map(
-                        (m) => (
-                            <div
+                <ul className="sheet row-divider">
+                    {filteredMaterials.map((m) => {
+                        const status = materialStatus(m.status);
+
+                        return (
+                            <li
                                 key={m.id}
-                                className="group relative flex gap-4 rounded-2xl border bg-white p-5 hover:border-indigo-300"
+                                className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 sm:flex-nowrap"
                             >
                                 <a
                                     href={m.file_url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex min-w-0 flex-1 gap-4"
+                                    className="group flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-auto"
                                 >
-                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
-                                        <FileText />
-                                    </div>
-
-                                    <div className="min-w-0">
-                                        <h3 className="truncate font-bold">
+                                    <SubjectMark
+                                        name={m.subject.name}
+                                        color={colors.byId(m.subject.id)}
+                                        size="sm"
+                                    />
+                                    <span className="min-w-0">
+                                        <span className="block truncate font-semibold decoration-rule-strong underline-offset-3 group-hover:underline">
                                             {m.title}
-                                        </h3>
-
-                                        <p className="mt-1 text-xs text-slate-400">
-                                            {m.subject.name}
-                                        </p>
-
-                                        <p className="mt-2 truncate text-xs text-slate-400">
+                                        </span>
+                                        <span className="block truncate text-[13px] text-muted">
+                                            {m.subject.name} ·{" "}
                                             {m.original_name}
-                                        </p>
-
-                                        {m.status !== "ready" && (
-                                            <p
-                                                className={`mt-2 text-xs font-medium ${
-                                                    m.status === "failed"
-                                                        ? "text-red-500"
-                                                        : "text-amber-600"
-                                                }`}
-                                            >
-                                                {m.status === "failed"
-                                                    ? "Falha ao processar"
-                                                    : m.status === "processing"
-                                                      ? "Processando..."
-                                                      : "Na fila..."}
-                                            </p>
-                                        )}
-
-                                        {reprocessMaterial.isError &&
-                                            reprocessMaterial.variables ===
-                                                m.id && (
-                                                <p className="mt-1 text-xs text-red-500">
-                                                    {getApiErrorMessage(
-                                                        reprocessMaterial.error,
-                                                    )}
-                                                </p>
-                                            )}
-                                    </div>
+                                        </span>
+                                    </span>
                                 </a>
 
-                                {m.status === "failed" && (
+                                <div className="ml-9 flex shrink-0 items-center gap-2 sm:ml-0">
+                                    <span
+                                        className={`stamp ${status.className}`}
+                                    >
+                                        {status.label}
+                                    </span>
+
+                                    {m.status === "failed" && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                reprocessMaterial.mutate(m.id)
+                                            }
+                                            disabled={
+                                                reprocessMaterial.isPending
+                                            }
+                                            className="btn btn-secondary btn-sm"
+                                        >
+                                            Tentar novamente
+                                        </button>
+                                    )}
+
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            reprocessMaterial.mutate(m.id)
-                                        }
-                                        disabled={reprocessMaterial.isPending}
-                                        className="shrink-0 self-center rounded-lg px-3 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50"
+                                        onClick={() => handleDelete(m.id)}
+                                        aria-label={`Excluir ${m.title}`}
+                                        title="Excluir material"
+                                        className="btn btn-ghost btn-icon text-muted hover:text-alta"
                                     >
-                                        Tentar novamente
+                                        <Trash2
+                                            size={16}
+                                            strokeWidth={1.75}
+                                            aria-hidden="true"
+                                        />
                                     </button>
-                                )}
+                                </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => handleDelete(m.id)}
-                                    aria-label={`Excluir ${m.title}`}
-                                    className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-slate-400 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 focus:opacity-100"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                        ),
-                    )}
-                </div>
+                                {reprocessMaterial.isError &&
+                                    reprocessMaterial.variables === m.id && (
+                                        <p className="ml-9 basis-full text-sm text-alta">
+                                            {getApiErrorMessage(
+                                                reprocessMaterial.error,
+                                            )}
+                                        </p>
+                                    )}
+                            </li>
+                        );
+                    })}
+                </ul>
             )}
 
             <Dialog
@@ -319,40 +347,56 @@ function RouteComponent() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label className="mb-2 block text-sm font-medium">
+                            <label
+                                htmlFor="material-file"
+                                className="field-label"
+                            >
                                 Arquivo
                             </label>
 
                             <input
+                                id="material-file"
                                 type="file"
                                 accept=".pdf,.docx,.pptx"
                                 onChange={handleFileChange}
-                                className="block w-full text-sm"
+                                className="field cursor-pointer text-ink-soft file:mr-3 file:cursor-pointer file:rounded-sm file:border file:border-rule-strong file:bg-paper file:px-2.5 file:py-0.5 file:text-sm file:font-semibold file:text-ink"
                             />
 
-                            <p className="mt-2 text-xs text-slate-400">
+                            <p className="field-hint">
                                 PDF, Word (.docx) ou PowerPoint (.pptx), até
                                 10 MB.
                             </p>
 
                             {selectedFile && (
-                                <p className="mt-2 text-sm text-slate-500">
-                                    {selectedFile.name}
+                                <p className="mt-2 flex items-center gap-2 text-sm text-ink-soft">
+                                    <FileText
+                                        size={16}
+                                        strokeWidth={1.75}
+                                        aria-hidden="true"
+                                        className="shrink-0 text-muted"
+                                    />
+                                    <span className="truncate">
+                                        {selectedFile.name}
+                                    </span>
                                 </p>
                             )}
                         </div>
 
                         <div>
-                            <label className="mb-2 block text-sm font-medium">
+                            <label
+                                htmlFor="material-subject"
+                                className="field-label"
+                            >
                                 Disciplina
                             </label>
 
                             <select
+                                id="material-subject"
                                 value={subjectId}
                                 onChange={(e) => setSubjectId(e.target.value)}
-                                className="w-full rounded-lg border bg-white px-3 py-2"
+                                className="field"
                             >
                                 <option value="">
                                     Selecione uma disciplina
@@ -369,7 +413,7 @@ function RouteComponent() {
                         </div>
 
                         {uploadMutation.isError && (
-                            <p className="text-sm text-red-500">
+                            <p className="text-sm text-alta">
                                 {getApiErrorMessage(uploadMutation.error)}
                             </p>
                         )}
@@ -389,7 +433,7 @@ function RouteComponent() {
                                     subjectId,
                                 });
                             }}
-                            className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+                            className="btn btn-primary w-full"
                         >
                             {uploadMutation.isPending
                                 ? "Enviando..."

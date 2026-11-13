@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Check, KeyRound, Save, ScanText, Trash2 } from "lucide-react";
+import { Check, Save, Trash2 } from "lucide-react";
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
 import { api, getApiErrorMessage } from "@/lib/api";
 
@@ -17,7 +18,6 @@ type Provider = {
 };
 
 type Settings = {
-    /** O provedor ativo do aluno, que responde todas as tarefas. */
     provider: string;
     default_provider: string;
     has_user_key: boolean;
@@ -63,8 +63,8 @@ function RouteComponent() {
 
     if (isLoading || !data) {
         return (
-            <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-                <p className="text-sm text-slate-400">Carregando…</p>
+            <div className="page page-narrow">
+                <p className="text-sm text-muted">Carregando…</p>
             </div>
         );
     }
@@ -77,23 +77,15 @@ function RouteComponent() {
     const hasChanges = !isSavedProvider || apiKey !== "";
 
     return (
-        <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/configuracoes"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ArrowLeft size={16} />
-                Voltar
-            </Link>
+        <div className="page page-narrow">
+            <BackLink to="/configuracoes" />
 
             <PageHeader
-                eyebrow="Sua conta"
                 title="Inteligência artificial"
                 description="Escolha a IA que responde por você em todas as tarefas: tópicos, questões, flashcards, tutor, resumos e leitura de PDF escaneado. Sem chave própria, usamos a chave do servidor."
             />
 
             <form
-                className="space-y-8"
                 onSubmit={(e) => {
                     e.preventDefault();
                     setSavedMessage(null);
@@ -103,8 +95,10 @@ function RouteComponent() {
                     });
                 }}
             >
-                <section>
-                    <h2 className="mb-4 text-sm font-bold">Provedor</h2>
+                <section aria-labelledby="ai-provider">
+                    <h2 id="ai-provider" className="section-title mb-4">
+                        Provedor
+                    </h2>
 
                     <div className="grid gap-3 sm:grid-cols-3">
                         {data.providers.map((p) => {
@@ -113,10 +107,10 @@ function RouteComponent() {
                             return (
                                 <label
                                     key={p.value}
-                                    className={`relative cursor-pointer rounded-2xl border bg-white p-5 transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-indigo-400 ${
+                                    className={`sheet relative flex cursor-pointer flex-col p-5 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus ${
                                         isSelected
-                                            ? "border-indigo-500 ring-2 ring-indigo-500"
-                                            : "hover:border-indigo-300"
+                                            ? "border-ink ring-1 ring-ink"
+                                            : "hover:border-rule-strong"
                                     }`}
                                 >
                                     <input
@@ -132,51 +126,54 @@ function RouteComponent() {
                                     />
                                     {isSelected && (
                                         <Check
-                                            size={16}
-                                            className="absolute right-4 top-4 text-indigo-600"
+                                            size={18}
+                                            strokeWidth={2}
+                                            aria-hidden="true"
+                                            className="absolute top-4 right-4 text-ink"
                                         />
                                     )}
-                                    <b className="text-sm">{p.label}</b>
-                                    <p className="mt-0.5 truncate text-xs text-slate-400">
+                                    <span className="pr-6 text-[15px] font-semibold">
+                                        {p.label}
+                                    </span>
+                                    <span className="mt-0.5 truncate text-[13px] text-muted">
                                         {p.model}
-                                    </p>
-                                    <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-medium">
-                                        {p.value === data.default_provider && (
-                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+                                    </span>
+                                    {p.value === data.default_provider && (
+                                        <span className="mt-3">
+                                            <span className="stamp stamp-idle">
                                                 Padrão do app
                                             </span>
-                                        )}
-                                    </div>
-                                    <p
-                                        className={`mt-3 text-xs ${
+                                        </span>
+                                    )}
+                                    <span
+                                        className={`mt-auto pt-3 text-[13px] ${
                                             p.has_app_key
-                                                ? "text-emerald-600"
-                                                : "text-amber-600"
+                                                ? "text-muted"
+                                                : "font-semibold text-media"
                                         }`}
                                     >
                                         {p.has_app_key
                                             ? "Chave do servidor disponível"
                                             : "Precisa da sua chave"}
-                                    </p>
+                                    </span>
                                 </label>
                             );
                         })}
                     </div>
                 </section>
 
-                <section>
-                    <h2 className="mb-1 flex items-center gap-2 text-sm font-bold">
-                        <KeyRound size={16} className="text-indigo-500" />
+                <section aria-labelledby="ai-key" className="mt-10">
+                    <h2 id="ai-key" className="section-title">
                         Sua chave de API ({provider.label})
                     </h2>
-                    <p className="mb-4 text-xs text-slate-400">
+                    <p className="mt-1.5 mb-4 max-w-[62ch] text-sm text-muted">
                         Opcional. Fica criptografada no banco e nunca é enviada
                         de volta para o navegador.
                     </p>
 
                     {keepsUserKey && (
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-white px-5 py-3">
-                            <span className="text-sm font-medium text-emerald-600">
+                        <div className="sheet mb-3 flex flex-wrap items-center justify-between gap-2 py-2 pr-2 pl-5">
+                            <span className="stamp stamp-ok">
                                 Chave própria salva
                             </span>
                             <button
@@ -186,9 +183,9 @@ function RouteComponent() {
                                     removeKey.mutate();
                                 }}
                                 disabled={removeKey.isPending}
-                                className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                className="btn btn-danger btn-sm"
                             >
-                                <Trash2 size={14} />
+                                <Trash2 size={15} aria-hidden="true" />
                                 Remover chave
                             </button>
                         </div>
@@ -208,40 +205,40 @@ function RouteComponent() {
                         }
                         aria-label={`Sua chave de API (${provider.label})`}
                         autoComplete="off"
-                        className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-indigo-400"
+                        className="field"
                     />
 
                     {!isSavedProvider && data.has_user_key && (
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="field-hint">
                             Ao trocar de provedor, a chave que você salvou para o
                             anterior é apagada.
                         </p>
                     )}
                     {!willHaveKey && (
-                        <p className="mt-2 text-xs text-amber-600">
+                        <p className="mt-1.5 text-[13px] font-semibold text-media">
                             O servidor não tem chave para {provider.label}: sem a
                             sua, a IA não vai funcionar.
                         </p>
                     )}
                 </section>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-rule pt-6">
                     <button
                         type="submit"
                         disabled={!hasChanges || save.isPending}
-                        className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+                        className="btn btn-primary"
                     >
-                        <Save size={15} />
+                        <Save size={16} aria-hidden="true" />
                         Salvar
                     </button>
 
                     {savedMessage && (
-                        <p className="text-sm font-medium text-emerald-600">
+                        <p role="status" className="stamp stamp-ok">
                             {savedMessage}
                         </p>
                     )}
                     {(save.isError || removeKey.isError) && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-alta">
                             {getApiErrorMessage(save.error ?? removeKey.error)}
                         </p>
                     )}

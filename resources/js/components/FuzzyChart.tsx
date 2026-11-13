@@ -1,4 +1,5 @@
 import {
+    CartesianGrid,
     LineChart,
     Line,
     XAxis,
@@ -7,6 +8,16 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import type { FuzzyTerm, FuzzyVariable } from "@/types/api";
+
+export const CHART = {
+    inputs: ["#9aa0aa", "#5b606b", "#16181d"],
+    output: ["#2b7a3e", "#a85400", "#c92a2a"],
+    marker: "#16181d",
+    grid: "#ecedef",
+    axis: "#dddfe3",
+    text: "#5b606b",
+    ink: "#16181d",
+} as const;
 
 /**
  * Os pontos (x, μ) que desenham um termo trapezoidal, como nas figuras dos slides 20 a 22.
@@ -58,21 +69,26 @@ export default function FuzzyChart({
                     <LineChart
                         margin={{ top: 8, right: 12, bottom: 0, left: -24 }}
                     >
+                        <CartesianGrid stroke={CHART.grid} vertical={false} />
                         <XAxis
                             type="number"
                             dataKey="x"
                             domain={[variable.min, variable.max]}
                             ticks={breakpoints(variable)}
-                            axisLine={false}
+                            axisLine={{ stroke: CHART.axis }}
                             tickLine={false}
-                            fontSize={11}
+                            tick={{ fill: CHART.text, fontSize: 12 }}
+                            tickMargin={6}
                         />
                         <YAxis
                             domain={[0, 1]}
                             ticks={[0, 0.5, 1]}
                             axisLine={false}
                             tickLine={false}
-                            fontSize={11}
+                            tick={{ fill: CHART.text, fontSize: 12 }}
+                            tickFormatter={(value) =>
+                                String(value).replace(".", ",")
+                            }
                         />
                         {variable.terms.map((term, index) => (
                             <Line
@@ -89,26 +105,28 @@ export default function FuzzyChart({
                         {marker !== undefined && (
                             <ReferenceLine
                                 x={marker}
-                                stroke="#0f172a"
-                                strokeDasharray="4 4"
+                                stroke={CHART.marker}
+                                strokeWidth={1.5}
+                                strokeDasharray="4 3"
                             />
                         )}
                     </LineChart>
                 </ResponsiveContainer>
             </div>
-            <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
                 {variable.terms.map((term, index) => (
-                    <span key={term.name} className="flex items-center gap-1.5">
+                    <li key={term.name} className="flex items-center gap-1.5">
                         <span
-                            className="inline-block h-2 w-2 rounded-full"
+                            aria-hidden="true"
+                            className="inline-block h-2.5 w-2.5 rounded-[2px]"
                             style={{
                                 backgroundColor: colors[index % colors.length],
                             }}
                         />
                         {formatTerm(term.name)}
-                    </span>
+                    </li>
                 ))}
-            </div>
+            </ul>
         </div>
     );
 }

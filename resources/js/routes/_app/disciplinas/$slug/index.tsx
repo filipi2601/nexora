@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Layers3, CircleHelp } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
-import ProgressBar from "@/components/ProgressBar";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import BackLink from "@/components/BackLink";
 import KnowledgeTreeView from "@/components/KnowledgeTreeView";
+import PageLoading from "@/components/PageLoading";
+import SubjectBand from "@/components/SubjectBand";
 import TopicOutline from "@/components/TopicOutline";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 
 export const Route = createFileRoute("/_app/disciplinas/$slug/")({
     component: RouteComponent,
@@ -22,82 +23,99 @@ function RouteComponent() {
     });
 
     const navigate = useNavigate();
+    const colors = useSubjectColors();
+    const color = colors.byId(subject?.id);
+    const progress = Math.max(0, Math.min(100, subject?.progress ?? 0));
+
+    if (!subject) {
+        return <PageLoading />;
+    }
 
     return (
-        <div className="mx-auto max-w-6xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/disciplinas"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ArrowLeft size={16} />
-                Disciplinas
-            </Link>
-            <PageHeader
-                eyebrow="Disciplina"
+        <div className="page">
+            <BackLink to="/disciplinas" label="Disciplinas" />
+
+            <SubjectBand
+                color={color}
                 title={subject?.name}
                 description="Tópicos extraídos pela IA a partir dos seus materiais."
-                action={
-                    <div className="text-right">
-                        <p className="text-xs text-slate-400">Progresso</p>
-                        <p className="text-2xl font-bold">
-                            {subject?.progress ?? 0}%
+                aside={
+                    <>
+                        <p className="flex items-baseline justify-between gap-3 text-sm text-white/85">
+                            Progresso geral
+                            <span className="figure text-[34px] text-white">
+                                {subject?.progress ?? 0}%
+                            </span>
                         </p>
-                    </div>
+                        {/* Na faixa, a barra é branca sobre um trilho translúcido. */}
+                        <div
+                            role="progressbar"
+                            aria-valuenow={Math.round(progress)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Progresso geral"
+                            className="mt-2.5 h-1 overflow-hidden bg-white/30"
+                        >
+                            <div
+                                className="h-full bg-white transition-[width] duration-500 ease-out"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                    </>
                 }
-            />
-            <div className="space-y-5">
-                <section className="min-w-0 rounded-3xl border bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] p-4">
-                    <h2 className="mb-3 px-2 text-sm font-bold">
+            >
+                        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/85">
+                            <span>
+                                <b className="font-semibold text-white">
+                                    {subject?.topics_count ?? 0}
+                                </b>{" "}
+                                tópicos
+                            </span>
+                            <span>
+                                <b className="font-semibold text-white">
+                                    {subject?.flashcards_count ?? 0}
+                                </b>{" "}
+                                flashcards
+                            </span>
+                            <span>
+                                <b className="font-semibold text-white">
+                                    {subject?.questions_count ?? 0}
+                                </b>{" "}
+                                questões
+                            </span>
+                        </p>
+            </SubjectBand>
+
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
+                <section aria-labelledby="knowledge-map" className="min-w-0">
+                    <h2 id="knowledge-map" className="section-title mb-4">
                         Mapa de conhecimento
                     </h2>
-                    <KnowledgeTreeView
-                        topics={subject?.topics ?? []}
-                        onSelect={(topicSlug: string) =>
-                            navigate({
-                                to: "/disciplinas/$slug/topico/$topicSlug",
-                                params: {
-                                    slug,
-                                    topicSlug,
-                                },
-                            })
-                        }
-                    />
+                    <div className="sheet p-3 sm:p-4">
+                        <KnowledgeTreeView
+                            topics={subject?.topics ?? []}
+                            color={color}
+                            onSelect={(topicSlug: string) =>
+                                navigate({
+                                    to: "/disciplinas/$slug/topico/$topicSlug",
+                                    params: {
+                                        slug,
+                                        topicSlug,
+                                    },
+                                })
+                            }
+                        />
+                    </div>
                 </section>
-                <aside className="space-y-5">
-                    <div className="rounded-3xl border bg-white p-5">
-                        <h2 className="mb-3 text-sm font-bold">
-                            Tópicos da disciplina
-                        </h2>
+
+                <section aria-labelledby="subject-topics" className="min-w-0">
+                    <h2 id="subject-topics" className="section-title mb-4">
+                        Tópicos da disciplina
+                    </h2>
+                    <div className="sheet p-2">
                         <TopicOutline topics={subject?.topics ?? []} />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border bg-white p-4">
-                            <Layers3
-                                className="mb-2 text-indigo-500"
-                                size={18}
-                            />
-                            <b className="text-sm">
-                                {subject?.flashcards_count ?? 0} flashcards
-                            </b>
-                        </div>
-                        <div className="rounded-2xl border bg-white p-4">
-                            <CircleHelp
-                                className="mb-2 text-sky-500"
-                                size={18}
-                            />
-                            <b className="text-sm">
-                                {subject?.questions_count ?? 0} questões
-                            </b>
-                        </div>
-                    </div>
-                </aside>
-            </div>
-            <div className="mt-6">
-                <div className="mb-2 flex justify-between text-xs">
-                    <span>Progresso geral</span>
-                    <b>{subject?.progress ?? 0}%</b>
-                </div>
-                <ProgressBar value={subject?.progress ?? 0} />
+                </section>
             </div>
         </div>
     );

@@ -40,6 +40,7 @@ class TopicController extends Controller
                 'children' => $topic->children->map(
                     fn (Topic $child) => [
                         'id' => $child->id,
+                        'slug' => $child->slug,
                         'name' => $child->name,
                         'description' => $child->description,
                         'depth' => $child->depth,

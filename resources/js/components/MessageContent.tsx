@@ -10,40 +10,40 @@ const MessageContent = ({
 }) => {
     if (variant === "user") {
         return (
-            <p className="whitespace-pre-wrap break-words text-sm leading-6">
+            <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.6]">
                 {children}
             </p>
         );
     }
 
     return (
-        <div className="space-y-3 text-sm leading-6 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        <div className="max-w-[68ch] space-y-3 text-[15px] leading-[1.6] text-ink-soft [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
             <Markdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                     h1: ({ children }) => (
-                        <h1 className="text-base font-bold text-slate-900">
+                        <h1 className="pt-2 font-display text-[22px] leading-tight font-semibold text-ink">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="text-sm font-bold text-slate-900">
+                        <h2 className="pt-2 font-display text-[19px] leading-tight font-semibold text-ink">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="text-sm font-bold text-slate-900">
+                        <h3 className="pt-1 text-[15px] font-bold text-ink">
                             {children}
                         </h3>
                     ),
                     h4: ({ children }) => (
-                        <h4 className="text-sm font-semibold text-slate-900">
+                        <h4 className="text-[15px] font-semibold text-ink">
                             {children}
                         </h4>
                     ),
                     p: ({ children }) => <p className="break-words">{children}</p>,
                     strong: ({ children }) => (
-                        <strong className="font-bold text-slate-900">
+                        <strong className="font-semibold text-ink">
                             {children}
                         </strong>
                     ),
@@ -51,26 +51,28 @@ const MessageContent = ({
                         <em className="italic">{children}</em>
                     ),
                     ul: ({ children }) => (
-                        <ul className="list-disc space-y-1.5 pl-5">{children}</ul>
+                        <ul className="list-disc space-y-1.5 pl-5 marker:text-muted">
+                            {children}
+                        </ul>
                     ),
                     ol: ({ children }) => (
-                        <ol className="list-decimal space-y-1.5 pl-5">
+                        <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-ink">
                             {children}
                         </ol>
                     ),
-                    li: ({ children }) => <li className="pl-0.5">{children}</li>,
+                    li: ({ children }) => <li className="pl-1">{children}</li>,
                     blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-indigo-300 bg-indigo-50/60 py-2 pl-3.5 pr-3 text-slate-600 italic">
+                        <blockquote className="border-l border-rule-strong pl-4 text-muted italic">
                             {children}
                         </blockquote>
                     ),
                     code: ({ children }) => (
-                        <code className="rounded bg-slate-200/70 px-1.5 py-0.5 font-mono text-[.8em] text-slate-800">
+                        <code className="rounded-sm bg-rule-soft px-1 py-0.5 font-mono text-[0.87em] text-ink">
                             {children}
                         </code>
                     ),
                     pre: ({ children }) => (
-                        <pre className="overflow-x-auto rounded-xl bg-slate-950 p-3.5 text-xs text-slate-100">
+                        <pre className="overflow-x-auto rounded bg-ink p-4 text-[13px] leading-relaxed text-white [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-[1em] [&_code]:text-white">
                             {children}
                         </pre>
                     ),
@@ -79,26 +81,26 @@ const MessageContent = ({
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-700"
+                            className="link"
                         >
                             {children}
                         </a>
                     ),
-                    hr: () => <hr className="border-slate-200" />,
+                    hr: () => <hr className="border-rule" />,
                     table: ({ children }) => (
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-xs">
+                        <div className="overflow-x-auto rounded border border-rule">
+                            <table className="w-full border-collapse text-sm">
                                 {children}
                             </table>
                         </div>
                     ),
                     th: ({ children }) => (
-                        <th className="border border-slate-200 bg-slate-50 px-2.5 py-2 text-left font-bold text-slate-900">
+                        <th className="border-b border-rule bg-paper px-3 py-2 text-left text-[13px] font-semibold text-muted">
                             {children}
                         </th>
                     ),
                     td: ({ children }) => (
-                        <td className="border border-slate-200 px-2.5 py-2 align-top">
+                        <td className="border-t border-rule-soft px-3 py-2 align-top">
                             {children}
                         </td>
                     ),

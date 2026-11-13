@@ -6,7 +6,6 @@ import {
     useLocation,
 } from "@tanstack/react-router";
 import {
-    Sparkles,
     Home,
     Target,
     Library,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import Logo from "@/components/Logo";
 import { useLogout } from "@/hooks/useLogout";
 import { api } from "@/lib/api";
 import {
@@ -54,19 +54,19 @@ export const Route = createFileRoute("/_app")({
 
 function RouteComponent() {
     return (
-        <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
+        <div className="min-h-screen bg-paper text-ink">
             <Sidebar />
-            <header className="flex h-16 items-center justify-between border-b bg-white px-5 lg:hidden">
+            <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-rule bg-sheet px-5 lg:hidden">
                 <Logo />
                 <Link
                     to="/configuracoes/perfil"
                     aria-label="Abrir perfil"
-                    className="rounded-full transition hover:opacity-80"
+                    className="rounded-full transition-opacity hover:opacity-80"
                 >
-                    <Avatar />
+                    <Avatar size="h-8 w-8" />
                 </Link>
             </header>
-            <main className="pb-24 lg:ml-64 lg:pb-0">
+            <main className="pb-24 lg:ml-60 lg:pb-0">
                 <Outlet />
             </main>
             <MobileNav />
@@ -76,7 +76,6 @@ function RouteComponent() {
 
 type NavLink = [string, string, LucideIcon];
 
-/** Single source of truth for every destination in the app. */
 const NAV_GROUPS: NavLink[][] = [
     [
         ["/", "Início", Home],
@@ -98,7 +97,6 @@ const NAV_GROUPS: NavLink[][] = [
     ],
 ];
 
-/** What fits in the bottom bar. */
 const MOBILE_PRIMARY: NavLink[] = [
     ["/", "Início", Home],
     ["/disciplinas", "Disciplinas", Brain],
@@ -106,7 +104,6 @@ const MOBILE_PRIMARY: NavLink[] = [
     ["/flashcards", "Flashcards", Layers3],
 ];
 
-/** What lives in the "Mais" sheet. */
 const MOBILE_SECONDARY: NavLink[] = [
     ["/biblioteca", "Biblioteca", Library],
     ["/questoes", "Questões", CircleHelp],
@@ -116,10 +113,6 @@ const MOBILE_SECONDARY: NavLink[] = [
     ["/configuracoes", "Configurações", Settings],
 ];
 
-/**
- * The authenticated user, read from the cache that beforeLoad already
- * populated — no extra /api/user request.
- */
 const useCurrentUser = () => {
     const { data: user } = useQuery({
         queryKey: ["auth", "user"],
@@ -141,7 +134,7 @@ const useCurrentUser = () => {
     return { user, initials };
 };
 
-const Avatar = ({ size = "h-10 w-10" }: { size?: string }) => {
+const Avatar = ({ size = "h-9 w-9" }: { size?: string }) => {
     const { user, initials } = useCurrentUser();
 
     if (user?.avatar_url) {
@@ -156,7 +149,7 @@ const Avatar = ({ size = "h-10 w-10" }: { size?: string }) => {
 
     return (
         <div
-            className={`${size} grid shrink-0 place-items-center rounded-full bg-slate-900 text-sm font-bold text-white`}
+            className={`${size} grid shrink-0 place-items-center rounded-full bg-ink text-[13px] font-semibold text-white`}
         >
             {initials || "?"}
         </div>
@@ -168,38 +161,46 @@ const Sidebar = () => {
     const { user } = useCurrentUser();
 
     return (
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200/80 bg-white px-4 py-6 lg:flex">
-            <Logo />
-            <nav className="mt-8 flex-1 space-y-4">
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-rule bg-sheet px-3 pt-6 pb-4 lg:flex">
+            <Link to="/" aria-label="Nexora, início" className="px-3">
+                <Logo />
+            </Link>
+            <nav aria-label="Principal" className="mt-8 flex-1 overflow-y-auto">
                 {NAV_GROUPS.map((group, i) => (
                     <div
                         key={i}
-                        className={i ? "border-t border-slate-100 pt-4" : ""}
+                        className={
+                            i ? "mt-3 border-t border-rule-soft pt-3" : ""
+                        }
                     >
                         {group.map(([to, label, Icon]) => (
                             <Link
                                 key={to}
                                 to={to}
-                                className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                                className="mb-0.5 flex min-h-10 items-center gap-3 rounded px-3 text-[15px] font-medium text-ink-soft transition-colors hover:bg-rule-soft hover:text-ink"
                                 activeProps={{
                                     className:
-                                        "mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-indigo-50 text-indigo-700 transition-colors",
+                                        "mb-0.5 flex min-h-10 items-center gap-3 rounded px-3 text-[15px] font-semibold bg-ink text-white",
+                                    "aria-current": "page",
                                 }}
+                                activeOptions={
+                                    to === "/" ? { exact: true } : undefined
+                                }
                             >
-                                <Icon size={18} />
+                                <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
                                 {label}
                             </Link>
                         ))}
                     </div>
                 ))}
             </nav>
-            <div className="flex items-center gap-3 border-t border-slate-100 pt-5">
+            <div className="flex items-center gap-3 border-t border-rule-soft px-1 pt-4">
                 <Avatar />
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">
                         {user?.name ?? "Estudante"}
                     </p>
-                    <p className="truncate text-xs text-slate-400">
+                    <p className="truncate text-[13px] text-muted">
                         {user?.email ?? ""}
                     </p>
                 </div>
@@ -210,30 +211,12 @@ const Sidebar = () => {
                     disabled={logout.isPending}
                     title="Sair da conta"
                     aria-label="Sair da conta"
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                    className="btn btn-ghost btn-icon shrink-0"
                 >
-                    <LogOut size={17} />
+                    <LogOut size={17} aria-hidden="true" />
                 </button>
             </div>
         </aside>
-    );
-};
-
-const Logo = () => {
-    return (
-        <div className="flex items-center gap-3 px-2">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
-                <Sparkles size={20} />
-            </div>
-            <div>
-                <p className="font-display text-lg font-bold tracking-[.16em] text-slate-950">
-                    NEXORA
-                </p>
-                <p className="text-[11px] font-medium text-slate-400">
-                    Learning Platform
-                </p>
-            </div>
-        </div>
     );
 };
 
@@ -248,25 +231,31 @@ const MobileNav = () => {
     );
 
     const itemClass =
-        "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-slate-500";
+        "relative flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted";
     const itemActiveClass =
-        "flex flex-col items-center gap-1 py-2.5 text-[10px] font-semibold text-indigo-600";
+        "relative flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-ink before:absolute before:inset-x-4 before:top-0 before:h-0.5 before:bg-ink";
 
     return (
         <>
-            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 backdrop-blur lg:hidden">
+            <nav
+                aria-label="Principal"
+                className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-sheet pb-[env(safe-area-inset-bottom)] lg:hidden"
+            >
                 <div className="grid grid-cols-5">
                     {MOBILE_PRIMARY.map(([to, label, Icon]) => (
                         <Link
                             key={to}
                             to={to}
                             className={itemClass}
-                            activeProps={{ className: itemActiveClass }}
+                            activeProps={{
+                                className: itemActiveClass,
+                                "aria-current": "page",
+                            }}
                             activeOptions={
                                 to === "/" ? { exact: true } : undefined
                             }
                         >
-                            <Icon size={19} />
+                            <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
                             {label}
                         </Link>
                     ))}
@@ -280,7 +269,7 @@ const MobileNav = () => {
                                 : `${itemClass} cursor-pointer`
                         }
                     >
-                        <MoreHorizontal size={19} />
+                        <MoreHorizontal size={20} strokeWidth={1.75} aria-hidden="true" />
                         Mais
                     </button>
                 </div>
@@ -289,34 +278,39 @@ const MobileNav = () => {
             <Dialog open={moreOpen} onOpenChange={setMoreOpen}>
                 <DialogContent
                     showCloseButton={false}
-                    className="top-auto bottom-0 left-0 w-full max-w-none translate-x-0 translate-y-0 rounded-b-none rounded-t-3xl p-0 sm:max-w-none"
+                    className="top-auto bottom-0 left-0 w-full max-w-none translate-x-0 translate-y-0 gap-0 rounded-b-none p-0 sm:max-w-none"
                 >
-                    <DialogHeader className="p-5 pb-0">
+                    <DialogHeader className="px-5 pt-5">
                         <DialogTitle>Mais</DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-5 pt-3">
-                        <div className="divide-y divide-slate-100">
+                    <div className="px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                        <div className="divide-y divide-rule-soft">
                             {MOBILE_SECONDARY.map(([to, label, Icon]) => (
                                 <Link
                                     key={to}
                                     to={to}
                                     onClick={() => setMoreOpen(false)}
-                                    className="flex items-center gap-3 py-3 text-sm font-medium text-slate-700 transition hover:text-indigo-600"
+                                    className="flex min-h-12 items-center gap-3 text-[15px] font-medium text-ink-soft transition-colors hover:text-ink"
+                                    activeProps={{
+                                        className:
+                                            "flex min-h-12 items-center gap-3 text-[15px] font-semibold text-ink",
+                                        "aria-current": "page",
+                                    }}
                                 >
-                                    <Icon size={18} className="text-slate-400" />
+                                    <Icon size={18} strokeWidth={1.75} className="text-muted" aria-hidden="true" />
                                     {label}
                                 </Link>
                             ))}
                         </div>
 
-                        <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
-                            <Avatar size="h-9 w-9" />
+                        <div className="mt-3 flex items-center gap-3 border-t border-rule pt-4">
+                            <Avatar />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-semibold">
                                     {user?.name ?? "Estudante"}
                                 </p>
-                                <p className="truncate text-xs text-slate-400">
+                                <p className="truncate text-[13px] text-muted">
                                     {user?.email ?? ""}
                                 </p>
                             </div>
@@ -324,11 +318,11 @@ const MobileNav = () => {
                                 type="button"
                                 onClick={() => logout.mutate()}
                                 disabled={logout.isPending}
-                                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                                className="btn btn-ghost btn-icon shrink-0"
                                 title="Sair da conta"
                                 aria-label="Sair da conta"
                             >
-                                <LogOut size={17} />
+                                <LogOut size={17} aria-hidden="true" />
                             </button>
                         </div>
                     </div>

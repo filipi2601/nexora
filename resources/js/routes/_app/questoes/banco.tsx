@@ -1,7 +1,10 @@
 import { api, getApiErrorMessage } from "@/lib/api";
-import { Trash2, ChevronLeft, FileText, RefreshCw } from "lucide-react";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { Trash2, RefreshCw } from "lucide-react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
+import SubjectMark from "@/components/SubjectMark";
+import { useSubjectColors } from "@/lib/subject-colors";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRoutePolling } from "@/hooks/useRoutePolling";
@@ -18,6 +21,7 @@ export const Route = createFileRoute("/_app/questoes/banco")({
 function RouteComponent() {
     const subjects = Route.useLoaderData() as SubjectWithQuestions[];
     const router = useRouter();
+    const colors = useSubjectColors();
     const [subjectFilter, setSubjectFilter] = useState<string | "all">("all");
     const filteredSubject =
         subjectFilter === "all"
@@ -52,26 +56,23 @@ function RouteComponent() {
     };
 
     return (
-        <div className="mx-auto max-w-5xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/questoes"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ChevronLeft size={16} />
-                Voltar
-            </Link>
+        <div className="page">
+            <BackLink to="/questoes" />
             <PageHeader
-                eyebrow="Prática ativa"
                 title="Banco de questões"
                 description="Todas as questões disponíveis para prática. Exclua as que não fazem sentido."
             />
 
             {subjects.length > 1 && (
-                <div className="mb-6">
+                <div className="mb-8 sm:max-w-xs">
+                    <label htmlFor="subject-filter" className="field-label">
+                        Disciplina
+                    </label>
                     <select
+                        id="subject-filter"
                         value={subjectFilter}
                         onChange={(e) => setSubjectFilter(e.target.value)}
-                        className="rounded-xl border bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none"
+                        className="field"
                         disabled={anyGenerating}
                     >
                         <option value="all">Todas as disciplinas</option>
@@ -84,96 +85,150 @@ function RouteComponent() {
                 </div>
             )}
             {filteredSubject.length === 0 ? (
-                <div className="rounded-3xl border border-dashed bg-white p-12 text-center">
-                    <FileText className="mx-auto text-slate-300" size={36} />
-                    <h2 className="mt-4 font-bold">Nenhuma questão</h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                <div className="sheet p-6">
+                    <h2 className="text-[17px] font-semibold">
+                        Nenhuma questão
+                    </h2>
+                    <p className="mt-1 text-[15px] text-ink-soft">
                         O banco está vazio para este filtro.
                     </p>
                 </div>
             ) : (
-                <div className="divide-y rounded-2xl border bg-white">
-                    {filteredSubject.map((subject) => (
-                        <div key={subject.slug}>
-                            <div className="flex align-center justify-between gap-4">
-                                <h2 className="p-5 text-lg font-medium text-slate-700">
-                                    {subject.name}
-                                </h2>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        generateQuestionsMutation.mutate(
-                                            subject.slug,
-                                        );
-                                    }}
-                                    disabled={isGenerating(subject)}
-                                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
-                                >
-                                    <RefreshCw
-                                        className={`h-4 w-4 ${isGenerating(subject) ? "animate-spin" : ""}`}
-                                    />
-                                    {isGenerating(subject)
-                                        ? "Gerando..."
-                                        : "Gerar questões"}
-                                </button>
-                            </div>
-                            {subject.questions_status === "failed" &&
-                                !isGenerating(subject) && (
-                                    <p className="px-5 pb-3 text-xs font-medium text-red-500">
+                <div className="space-y-10">
+                    {filteredSubject.map((subject) => {
+                        const generating = isGenerating(subject);
+                        const questions = subject.questions ?? [];
+                        const failed =
+                            subject.questions_status === "failed" &&
+                            !generating;
+
+                        return (
+                            <section
+                                key={subject.slug}
+                                aria-labelledby={`subject-${subject.slug}`}
+                            >
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                                        <SubjectMark
+                                            name={subject.name}
+                                            color={colors.byId(subject.id)}
+                                            size="md"
+                                        />
+                                        <h2
+                                            id={`subject-${subject.slug}`}
+                                            className="section-title"
+                                        >
+                                            {subject.name}
+                                        </h2>
+                                        <span className="text-sm text-muted tabular-nums">
+                                            {questions.length}{" "}
+                                            {questions.length === 1
+                                                ? "questão"
+                                                : "questões"}
+                                        </span>
+                                        {generating && (
+                                            <span className="stamp stamp-wait">
+                                                Gerando...
+                                            </span>
+                                        )}
+                                        {failed && (
+                                            <span className="stamp stamp-error">
+                                                Falhou
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            generateQuestionsMutation.mutate(
+                                                subject.slug,
+                                            );
+                                        }}
+                                        disabled={generating}
+                                        className="btn btn-secondary btn-sm"
+                                    >
+                                        <RefreshCw
+                                            size={16}
+                                            strokeWidth={1.75}
+                                            aria-hidden="true"
+                                            className={
+                                                generating ? "animate-spin" : ""
+                                            }
+                                        />
+                                        {generating
+                                            ? "Gerando..."
+                                            : "Gerar questões"}
+                                    </button>
+                                </div>
+
+                                {failed && (
+                                    <p className="mb-3 text-sm text-alta">
                                         {subject.questions_error ??
                                             "A última geração falhou. Tente novamente."}
                                     </p>
                                 )}
 
-                            {generateQuestionsMutation.isError &&
-                                generateQuestionsMutation.variables ===
-                                    subject.slug && (
-                                    <p className="px-5 pb-3 text-xs font-medium text-red-500">
-                                        {getApiErrorMessage(
-                                            generateQuestionsMutation.error,
-                                        )}
-                                    </p>
-                                )}
+                                {generateQuestionsMutation.isError &&
+                                    generateQuestionsMutation.variables ===
+                                        subject.slug && (
+                                        <p className="mb-3 text-sm text-alta">
+                                            {getApiErrorMessage(
+                                                generateQuestionsMutation.error,
+                                            )}
+                                        </p>
+                                    )}
 
-                            {(subject.questions ?? []).length === 0 &&
-                                !isGenerating(subject) && (
-                                    <p className="px-5 pb-5 text-sm text-slate-400">
+                                {questions.length === 0 && !generating && (
+                                    <p className="sheet px-5 py-4 text-[15px] text-ink-soft">
                                         Nenhuma questão nesta disciplina ainda.
                                         Clique em "Gerar questões".
                                     </p>
                                 )}
 
-                            {(subject.questions ?? []).map((question) => (
-                                <div
-                                    key={question.id}
-                                    className="flex items-start justify-between gap-4 p-5"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-800">
-                                            {question.statement}
-                                        </p>
-                                        <p className="mt-1 text-xs text-slate-400">
-                                            {subject.name}
-                                            {question.topic
-                                                ? ` · ${question.topic.name}`
-                                                : ""}
-                                            {/* {question.wrong ? " · errada recentemente" : ""} */}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() =>
-                                            handleDelete(question.id)
-                                        }
-                                        className="shrink-0 rounded-lg p-2 text-slate-300 hover:text-red-600"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
+                                {questions.length > 0 && (
+                                    <ul className="sheet row-divider">
+                                        {questions.map((question) => (
+                                            <li
+                                                key={question.id}
+                                                className="flex items-start justify-between gap-3 px-5 py-4"
+                                            >
+                                                <div className="min-w-0 py-1.5">
+                                                    <p className="text-[15px] leading-6 font-semibold text-ink">
+                                                        {question.statement}
+                                                    </p>
+                                                    <p className="mt-1 text-[13px] text-muted">
+                                                        {subject.name}
+                                                        {question.topic
+                                                            ? ` · ${question.topic.name}`
+                                                            : ""}
+                                                        {/* {question.wrong ? " · errada recentemente" : ""} */}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Excluir questão"
+                                                    onClick={() =>
+                                                        handleDelete(
+                                                            question.id,
+                                                        )
+                                                    }
+                                                    className="btn btn-danger btn-icon shrink-0"
+                                                >
+                                                    <Trash2
+                                                        size={16}
+                                                        strokeWidth={1.75}
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+                        );
+                    })}
                 </div>
             )}
         </div>

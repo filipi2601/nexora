@@ -1,16 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-    BookOpen,
-    CheckCircle2,
-    CircleHelp,
-    Clock3,
-    Layers3,
-    Play,
-    type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import {
+    AnswerOption,
+    AnswerResult,
+    SessionCounter,
+} from "@/components/QuestionPractice";
+import SubjectMark from "@/components/SubjectMark";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 
 export const Route = createFileRoute("/_app/estudar")({
     loader: async () => (await api.get("/api/subjects")).data,
@@ -36,8 +35,16 @@ type Item =
           subject?: Subject;
       };
 
+const RATING_LABELS: Record<string, string> = {
+    again: "De novo",
+    hard: "Difícil",
+    good: "Bom",
+    easy: "Fácil",
+};
+
 function RouteComponent() {
     const subjects = Route.useLoaderData() as Subject[];
+    const colors = useSubjectColors();
     const [session, setSession] = useState<{
         id: number;
         items_count: number;
@@ -114,37 +121,39 @@ function RouteComponent() {
 
     if (finished) {
         return (
-            <div className="mx-auto max-w-5xl p-5 sm:p-8 lg:p-12">
+            <div className="page page-narrow">
                 <PageHeader
-                    eyebrow="Sessão concluída"
                     title="Bom trabalho!"
                     description="Seu progresso foi salvo."
                 />
-                <div className="rounded-3xl border bg-white p-10 text-center">
-                    <CheckCircle2
-                        className="mx-auto text-emerald-600"
-                        size={40}
-                    />
-                    <h2 className="mt-4 text-2xl font-bold">
-                        {finished.correct_answers} acertos em{" "}
-                        {finished.items_count} itens
+                <section className="sheet p-6 sm:p-8">
+                    <span className="stamp stamp-ok">Sessão concluída</span>
+                    <h2 className="mt-4 text-[17px] leading-8 text-ink-soft">
+                        <span className="figure text-[34px] text-ink">
+                            {finished.correct_answers}
+                        </span>{" "}
+                        acertos em{" "}
+                        <span className="figure text-[34px] text-ink">
+                            {finished.items_count}
+                        </span>{" "}
+                        itens
                     </h2>
-                </div>
+                </section>
             </div>
         );
     }
 
     if (session && items.length === 0) {
         return (
-            <div className="mx-auto max-w-5xl p-5 sm:p-8 lg:p-12">
+            <div className="page page-narrow">
                 <PageHeader
-                    eyebrow="Sessão"
                     title="Nada pendente agora"
                     description="Não há flashcards devidos ou questões para esta seleção."
                 />
                 <button
+                    type="button"
                     onClick={() => setSession(null)}
-                    className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
+                    className="btn btn-primary"
                 >
                     Voltar
                 </button>
@@ -154,186 +163,234 @@ function RouteComponent() {
 
     if (session) {
         const item = items[index];
+        const subjectColor = item.subject
+            ? colors.byId(item.subject.id)
+            : undefined;
+
         return (
-            <div className="mx-auto max-w-3xl p-5 sm:p-8 lg:p-12">
+            <div className="page page-narrow">
                 <PageHeader
-                    eyebrow={`${index + 1} de ${items.length}`}
                     title={item.type === "question" ? "Questão" : "Flashcard"}
-                    description={item.subject?.name ?? "Sessão de estudo"}
+                    description={
+                        item.subject ? (
+                            <span className="inline-flex items-center gap-2">
+                                <SubjectMark
+                                    name={item.subject.name}
+                                    color={colors.byId(item.subject.id)}
+                                    size="sm"
+                                />
+                                {item.subject.name}
+                            </span>
+                        ) : (
+                            "Sessão de estudo"
+                        )
+                    }
                 />
-                <div className="rounded-3xl border bg-white p-8">
-                    {item.type === "question" ? (
-                        <>
-                            <h2 className="text-xl font-bold">
-                                {item.statement}
-                            </h2>
-                            <div className="mt-7 grid gap-3">
-                                {item.options.map((option, optionIndex) => {
-                                    const answered = selected !== null;
-                                    const picked = option.id === selected;
-                                    const state =
-                                        answered && option.is_correct
-                                            ? "border-emerald-400 bg-emerald-50"
-                                            : answered && picked
-                                              ? "border-red-400 bg-red-50"
-                                              : "border bg-white hover:border-indigo-400 hover:bg-indigo-50";
-                                    return (
-                                        <button
-                                            key={option.id}
-                                            disabled={answered}
-                                            onClick={() =>
-                                                answer(item, option.id)
-                                            }
-                                            className={`rounded-xl p-4 text-left text-sm font-medium ${state}`}
-                                        >
-                                            {String.fromCharCode(
-                                                65 + optionIndex,
-                                            )}
-                                            . {option.text}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {selected !== null && (
-                                <div className="mt-6 flex items-center justify-between gap-4">
-                                    <p className="text-sm text-slate-500">
+
+                <SessionCounter current={index + 1} total={items.length} />
+
+                {item.type === "question" ? (
+                    <article className="sheet p-6 sm:p-8">
+                        <h2 className="text-[19px] leading-snug font-semibold text-ink">
+                            {item.statement}
+                        </h2>
+                        <div className="mt-6 grid gap-2.5">
+                            {item.options.map((option, optionIndex) => (
+                                <AnswerOption
+                                    key={option.id}
+                                    index={optionIndex}
+                                    text={option.text}
+                                    answered={selected !== null}
+                                    isCorrect={option.is_correct}
+                                    isPicked={option.id === selected}
+                                    onSelect={() => answer(item, option.id)}
+                                />
+                            ))}
+                        </div>
+                        {selected !== null && (
+                            <div className="mt-6 border-t border-rule-soft pt-5">
+                                {item.explanation && (
+                                    <p className="max-w-[65ch] text-[15px] leading-6 text-ink-soft">
                                         {item.explanation}
                                     </p>
+                                )}
+                                <div
+                                    className={`flex flex-wrap items-center justify-between gap-4 ${item.explanation ? "mt-5" : ""}`}
+                                >
+                                    <AnswerResult
+                                        correct={
+                                            !!item.options.find(
+                                                (option) =>
+                                                    option.id === selected,
+                                            )?.is_correct
+                                        }
+                                    />
                                     <button
+                                        type="button"
                                         onClick={next}
-                                        className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
+                                        className="btn btn-primary"
                                     >
                                         {index + 1 === items.length
                                             ? "Finalizar"
                                             : "Próxima"}
+                                        <ArrowRight
+                                            size={16}
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                 </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <p className="text-xl font-bold">{item.front}</p>
-                            {revealed ? (
-                                <>
-                                    <div className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm">
-                                        {item.back}
-                                    </div>
-                                    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                        {["again", "hard", "good", "easy"].map(
-                                            (rating) => (
-                                                <button
-                                                    key={rating}
-                                                    disabled={loading}
-                                                    onClick={() =>
-                                                        review(item, rating)
-                                                    }
-                                                    className="rounded-xl border p-3 text-sm font-bold capitalize hover:border-indigo-400"
-                                                >
-                                                    {rating === "again"
-                                                        ? "De novo"
-                                                        : rating === "hard"
-                                                          ? "Difícil"
-                                                          : rating === "good"
-                                                            ? "Bom"
-                                                            : "Fácil"}
-                                                </button>
-                                            ),
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <button
-                                    onClick={() => setRevealed(true)}
-                                    className="mt-7 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
+                            </div>
+                        )}
+                    </article>
+                ) : (
+                    <>
+                        <article className="sheet">
+                            <div className="flex min-h-48 items-center px-6 py-8 sm:px-10 sm:py-10">
+                                <p className="font-display text-[28px] leading-tight font-semibold text-ink sm:text-[32px]">
+                                    {item.front}
+                                </p>
+                            </div>
+                            {revealed && (
+                                <div
+                                    className="border-t border-rule px-6 py-6 sm:px-10 sm:py-8"
+                                    style={
+                                        subjectColor
+                                            ? { borderTopColor: subjectColor }
+                                            : undefined
+                                    }
                                 >
-                                    Mostrar resposta
-                                </button>
+                                    <p className="max-w-[65ch] text-[17px] leading-7 text-ink-soft">
+                                        {item.back}
+                                    </p>
+                                </div>
                             )}
-                        </>
-                    )}
-                </div>
+                        </article>
+
+                        {revealed ? (
+                            <div className="mt-6">
+                                <p className="mb-3 text-[15px] text-ink-soft">
+                                    Quão bem você sabia?
+                                </p>
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    {["again", "hard", "good", "easy"].map(
+                                        (rating) => (
+                                            <button
+                                                key={rating}
+                                                type="button"
+                                                disabled={loading}
+                                                onClick={() =>
+                                                    review(item, rating)
+                                                }
+                                                className="btn btn-secondary"
+                                            >
+                                                {RATING_LABELS[rating]}
+                                            </button>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setRevealed(true)}
+                                className="btn btn-primary mt-6"
+                            >
+                                Mostrar resposta
+                            </button>
+                        )}
+                    </>
+                )}
             </div>
         );
     }
 
     return (
-        <div className="mx-auto max-w-5xl p-5 sm:p-8 lg:p-12">
+        <div className="page page-narrow">
             <PageHeader
-                eyebrow="Sua próxima ação"
                 title="O que vamos estudar?"
                 description="Uma sessão equilibrada, montada a partir do seu progresso e das revisões pendentes."
             />
-            <div className="mx-auto max-w-2xl rounded-3xl bg-linear-to-br from-indigo-600 to-violet-700 p-8 text-white shadow-2xl shadow-indigo-200">
-                <p className="text-xs font-bold uppercase tracking-[.2em] text-indigo-200">
-                    Sessão recomendada
-                </p>
-                <h2 className="mt-4 text-3xl font-bold">
-                    Revisões e questões para hoje
-                </h2>
-                <div className="mt-8 grid grid-cols-3 gap-3 text-center">
-                    <Stat icon={Clock3} value="~15 min" />
-                    <Stat icon={Layers3} value="até 5 cards" />
-                    <Stat icon={CircleHelp} value="até 5 questões" />
+
+            <section aria-labelledby="recommended-session" className="sheet">
+                <div className="p-6 sm:p-7">
+                    <h2 id="recommended-session" className="section-title">
+                        Revisões e questões para hoje
+                    </h2>
+                    <p className="mt-3 text-[17px] leading-8 text-ink-soft">
+                        Cerca de{" "}
+                        <span className="figure text-[30px] text-ink">15</span>{" "}
+                        min, com até{" "}
+                        <span className="figure text-[30px] text-ink">5</span>{" "}
+                        cards e até{" "}
+                        <span className="figure text-[30px] text-ink">5</span>{" "}
+                        questões.
+                    </p>
                 </div>
-                <button
-                    disabled={loading || subjects.length === 0}
-                    onClick={() => start()}
-                    className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 font-bold text-indigo-700 disabled:opacity-60"
-                >
-                    <Play size={18} fill="currentColor" />
-                    {loading ? "Montando sessão..." : "Começar sessão"}
-                </button>
-            </div>
+                <div className="border-t border-rule-soft px-6 py-5 sm:px-7">
+                    <button
+                        type="button"
+                        disabled={loading || subjects.length === 0}
+                        onClick={() => start()}
+                        className="btn btn-primary w-full sm:w-auto"
+                    >
+                        {loading ? "Montando sessão..." : "Começar sessão"}
+                        <ArrowRight size={16} aria-hidden="true" />
+                    </button>
+                </div>
+            </section>
+
             {subjects.length === 0 ? (
-                <div className="mt-10 rounded-3xl border border-dashed bg-white p-10 text-center">
-                    <BookOpen className="mx-auto text-slate-300" size={36} />
-                    <h2 className="mt-4 font-bold">
+                <div className="sheet mt-10 p-6">
+                    <h2 className="text-[17px] font-semibold">
                         Você ainda não tem disciplinas
                     </h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-[15px] text-ink-soft">
                         Crie uma disciplina e envie seus materiais para montar
                         sessões de estudo.
                     </p>
-                    <Link
-                        to="/disciplinas"
-                        className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
-                    >
+                    <Link to="/disciplinas" className="btn btn-secondary mt-5">
                         Ir para disciplinas
                     </Link>
                 </div>
             ) : (
-                <>
-                    <p className="mb-4 mt-10 text-center text-sm font-semibold text-slate-400">
-                        OU ESCOLHA UMA DISCIPLINA
-                    </p>
-                    <div className="grid gap-3 sm:grid-cols-3">
+                <section aria-labelledby="by-subject" className="mt-12">
+                    <h2 id="by-subject" className="section-title mb-4">
+                        Ou escolha uma disciplina
+                    </h2>
+                    <ul className="sheet row-divider">
                         {subjects.map((subject) => (
-                            <button
-                                key={subject.id}
-                                disabled={loading}
-                                onClick={() => start(subject.id)}
-                                className="rounded-2xl border bg-white p-5 text-left hover:border-indigo-300"
-                            >
-                                <span className="text-sm font-bold">
-                                    {subject.name}
-                                </span>
-                                <p className="mt-1 text-xs text-slate-400">
-                                    Montar sessão desta disciplina
-                                </p>
-                            </button>
+                            <li key={subject.id}>
+                                <button
+                                    type="button"
+                                    disabled={loading}
+                                    onClick={() => start(subject.id)}
+                                    className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-paper disabled:cursor-not-allowed disabled:opacity-45"
+                                >
+                                    <SubjectMark
+                                        name={subject.name}
+                                        color={colors.byId(subject.id)}
+                                        size="sm"
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate font-semibold">
+                                            {subject.name}
+                                        </span>
+                                        <span className="block text-[13px] text-muted">
+                                            Montar sessão desta disciplina
+                                        </span>
+                                    </span>
+                                    <ChevronRight
+                                        size={16}
+                                        strokeWidth={1.75}
+                                        aria-hidden="true"
+                                        className="shrink-0 text-muted"
+                                    />
+                                </button>
+                            </li>
                         ))}
-                    </div>
-                </>
+                    </ul>
+                </section>
             )}
-        </div>
-    );
-}
-
-function Stat({ icon: Icon, value }: { icon: LucideIcon; value: string }) {
-    return (
-        <div className="rounded-xl bg-white/10 p-3">
-            <Icon className="mx-auto mb-2" size={18} />
-            <b className="text-sm">{value}</b>
         </div>
     );
 }

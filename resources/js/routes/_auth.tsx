@@ -6,8 +6,8 @@ export const Route = createFileRoute("/_auth")({
 
 function RouteComponent() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background px-4">
-            <div className="w-full max-w-md">
+        <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-10 text-ink">
+            <div className="w-full max-w-[400px]">
                 <Outlet />
             </div>
         </div>

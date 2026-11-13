@@ -1,9 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, LogInIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
 import { api } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 
@@ -34,7 +32,7 @@ function RouteComponent() {
         },
 
         onError: () => {
-            setError("Email ou senha inválidos.");
+            setError("E-mail ou senha inválidos.");
         },
     });
 
@@ -46,85 +44,81 @@ function RouteComponent() {
 
     return (
         <>
-            <div className="text-center mb-10">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
-                    <LogInIcon
-                        className="w-7 h-7 text-primary-foreground"
-                        aria-hidden="true"
-                    />
-                </div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            <div className="mb-8 flex justify-center">
+                <Logo size="lg" />
+            </div>
+
+            <div className="sheet p-6 sm:p-8">
+                <h1 className="font-display text-[30px] leading-tight font-semibold">
                     Bem-vindo
                 </h1>
-                <p className="text-muted-foreground mt-2">
+                <p className="mt-1 text-[15px] text-muted">
                     Entre com suas credenciais
                 </p>
-            </div>
-            <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+
                 {error && (
-                    <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <p
+                        role="alert"
+                        className="mt-5 rounded bg-alta-wash px-3 py-2.5 text-sm font-semibold text-alta"
+                    >
                         {error}
-                    </div>
+                    </p>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <div className="relative">
-                            <Mail
-                                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-                                aria-hidden="true"
-                            />
-                            <Input
-                                id="email"
-                                type="email"
-                                autoComplete="email"
-                                autoFocus
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="pl-10 h-12"
-                                required
-                            />
-                        </div>
+                <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                    <div>
+                        <label htmlFor="email" className="field-label">
+                            E-mail
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            autoComplete="email"
+                            autoFocus
+                            placeholder="voce@exemplo.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="field min-h-11"
+                            required
+                        />
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            {/* <Label htmlFor="password">Password</Label>
-                            <Link
+                    <div>
+                        <div className="flex items-baseline justify-between">
+                            <label htmlFor="password" className="field-label">
+                                Senha
+                            </label>
+                            {/* <Link
                                 to="/forgot-password"
-                                className="text-xs text-primary hover:underline"
+                                className="link text-[13px]"
                             >
-                                Forgot password?
+                                Esqueceu a senha?
                             </Link> */}
                         </div>
-                        <div className="relative">
-                            <Lock
-                                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-                                aria-hidden="true"
-                            />
-                            <Input
-                                id="password"
-                                type="password"
-                                autoComplete="current-password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="pl-10 h-12"
-                                required
-                            />
-                        </div>
+                        <input
+                            id="password"
+                            type="password"
+                            autoComplete="current-password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="field min-h-11"
+                            required
+                        />
                     </div>
-                    <Button type="submit" className="w-full h-12 font-medium">
+                    <button type="submit" className="btn btn-primary min-h-11 w-full">
                         {loginMutation.isPending ? (
                             <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Logging in...
+                                <Loader2
+                                    size={16}
+                                    aria-hidden="true"
+                                    className="animate-spin"
+                                />
+                                Entrando...
                             </>
                         ) : (
-                            "Log in"
+                            "Entrar"
                         )}
-                    </Button>
+                    </button>
                 </form>
             </div>
         </>

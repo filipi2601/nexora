@@ -1,10 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Loader2, ChevronLeft } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
 import MessageContent from "@/components/MessageContent";
+import SubjectMark from "@/components/SubjectMark";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 
 export const Route = createFileRoute("/_app/tutor/$id")({
     loader: async ({ params }) =>
@@ -14,6 +17,7 @@ export const Route = createFileRoute("/_app/tutor/$id")({
 
 function RouteComponent() {
     const conversation = Route.useLoaderData();
+    const colors = useSubjectColors();
     const [messages, setMessages] = useState(
         conversation.messages.map((m: any) => ({
             role: m.role,
@@ -77,60 +81,61 @@ function RouteComponent() {
     }
 
     return (
-        <div className="mx-auto flex h-dvh max-w-5xl flex-col p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/tutor"
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ChevronLeft size={16} />
-                Voltar
-            </Link>
-            <PageHeader
-                eyebrow="Aprenda conversando"
-                title="Tutor IA"
-                description="Seu tutor conhece a disciplina e o assunto em que você está estudando."
-            />
-            <div className="mb-4 shrink-0 rounded-xl border bg-white px-4 py-3 text-xs">
-                <span className="text-slate-400">Estou estudando:</span>{" "}
-                <b>
-                    {conversation.subject?.name}
-                    {conversation.topic ? ` · ${conversation.topic.name}` : ""}
-                </b>
+        <div className="page page-narrow -mb-24 flex h-[calc(100dvh-7rem-env(safe-area-inset-bottom))] flex-col pt-4 pb-3 sm:pt-6 sm:pb-4 lg:mb-0 lg:h-dvh lg:pt-8 lg:pb-8">
+            <div className="shrink-0">
+                <BackLink to="/tutor" />
+                <PageHeader
+                    title="Tutor IA"
+                    description={
+                        <span className="flex items-center gap-2.5">
+                            <SubjectMark
+                                name={conversation.subject?.name}
+                                color={colors.byId(conversation.subject?.id)}
+                                size="sm"
+                            />
+                            <span className="min-w-0">
+                                Estou estudando:{" "}
+                                <b className="font-semibold text-ink">
+                                    {conversation.subject?.name}
+                                    {conversation.topic
+                                        ? ` · ${conversation.topic.name}`
+                                        : ""}
+                                </b>
+                            </span>
+                        </span>
+                    }
+                />
             </div>
+
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-3xl border bg-white p-5 sm:p-7"
+                role="log"
+                aria-label="Conversa com o tutor"
+                className="-mx-1 min-h-0 flex-1 space-y-4 overflow-y-auto border-t border-rule px-1 pt-5 pb-2"
             >
                 {messages.length === 0 && (
-                    <div className="flex gap-3">
-                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-600 text-white">
-                            <Bot size={18} />
-                        </div>
-                        <p className="max-w-[80%] rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-                            Olá! Posso explicar conceitos, fazer perguntas,
-                            corrigir respostas ou criar exemplos com base no que
-                            você está estudando.
-                        </p>
+                    <div className="sheet max-w-[92%] px-5 py-4 text-[15px] leading-[1.6] text-ink-soft">
+                        Olá! Posso explicar conceitos, fazer perguntas,
+                        corrigir respostas ou criar exemplos com base no que
+                        você está estudando.
                     </div>
                 )}
                 {messages.map((m: any, i: number) => (
                     <div
                         key={i}
-                        className={`flex gap-3 ${m.role === "user" ? "justify-end" : ""}`}
+                        className={`flex ${m.role === "user" ? "justify-end" : ""}`}
                     >
-                        {m.role === "ai" && (
-                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-600 text-white">
-                                <Bot size={18} />
-                            </div>
-                        )}
                         <div
-                            className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                            className={
                                 m.role === "user"
-                                    ? "bg-slate-950 text-white"
-                                    : "bg-slate-50 text-slate-700"
-                            }`}
+                                    ? "max-w-[85%] rounded bg-ink px-4 py-3 text-white"
+                                    : "sheet max-w-[92%] min-w-0 px-5 py-4 text-ink-soft"
+                            }
                         >
+                            <span className="sr-only">
+                                {m.role === "user" ? "Você:" : "Tutor:"}
+                            </span>
                             <MessageContent variant={m.role === "user" ? "user" : "ai"}>
                                 {m.text}
                             </MessageContent>
@@ -138,32 +143,38 @@ function RouteComponent() {
                     </div>
                 ))}
                 {sendMutation.isPending && (
-                    <div className="flex gap-3">
-                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-600 text-white">
-                            <Bot size={18} />
-                        </div>
-                        <div className="flex h-9 items-center rounded-2xl bg-slate-50 px-4">
-                            <Loader2 className="size-4 animate-spin text-indigo-500" />
+                    <div className="flex">
+                        <div className="sheet flex h-11 items-center px-5">
+                            <Loader2
+                                size={16}
+                                aria-hidden="true"
+                                className="animate-spin text-muted"
+                            />
+                            <span className="sr-only">O tutor está respondendo</span>
                         </div>
                     </div>
                 )}
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-alta">{error}</p>}
             </div>
+
             <form
                 onSubmit={send}
-                className="mt-4 flex shrink-0 gap-2 rounded-2xl border bg-white p-2"
+                className="flex shrink-0 gap-2 border-t border-rule pt-3"
             >
                 <input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Pergunte sobre o que está estudando..."
-                    className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
+                    aria-label="Sua pergunta"
+                    className="field min-h-11 min-w-0 flex-1"
                 />
                 <button
                     disabled={sendMutation.isPending}
-                    className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-600 text-white disabled:opacity-50"
+                    aria-label="Enviar"
+                    className="btn btn-primary min-h-11 shrink-0 px-3 sm:px-4"
                 >
-                    <Send size={18} />
+                    <Send size={16} aria-hidden="true" />
+                    <span className="hidden sm:inline">Enviar</span>
                 </button>
             </form>
         </div>

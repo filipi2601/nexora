@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
     ArrowRight,
-    Bot,
     Brain,
     ChartNoAxesCombined,
     ChevronDown,
@@ -40,43 +39,45 @@ const JOURNEY: [LucideIcon, string][] = [
 
 function RouteComponent() {
     return (
-        <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
+        <div className="page page-narrow">
             <PageHeader
-                eyebrow="Ajuda"
                 title="Como usar o Nexora"
                 description="Um guia passo a passo para transformar os seus materiais de aula em resumos, flashcards e questões. Não precisa entender nada de tecnologia: é só seguir a ordem abaixo."
             />
 
-            <section className="rounded-3xl border bg-white p-6">
-                <h2 className="font-bold">O caminho, em resumo</h2>
-                <p className="mt-1 text-sm text-slate-500">
+            <section aria-labelledby="journey" className="sheet p-6">
+                <h2 id="journey" className="section-title">
+                    O caminho, em resumo
+                </h2>
+                <p className="mt-1.5 text-[15px] text-ink-soft">
                     Você só faz os passos 1, 2 e 4. O resto a inteligência
                     artificial (IA) faz por você.
                 </p>
-                <ol className="mt-5 flex flex-wrap items-center gap-2">
+                <ol className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-rule-soft pt-5 sm:grid-cols-3">
                     {JOURNEY.map(([Icon, label], index) => (
-                        <li key={label} className="flex items-center gap-2">
-                            <span className="flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700">
-                                <Icon size={15} />
-                                {index + 1}. {label}
+                        <li key={label} className="flex items-center gap-3">
+                            <span className="figure w-5 shrink-0 text-[26px] text-ink">
+                                {index + 1}
                             </span>
-                            {index < JOURNEY.length - 1 && (
-                                <ArrowRight
-                                    size={14}
-                                    className="text-slate-300"
+                            <span className="flex min-w-0 items-center gap-2 text-[15px] leading-tight font-semibold">
+                                <Icon
+                                    size={16}
+                                    strokeWidth={1.75}
+                                    aria-hidden="true"
+                                    className="shrink-0 text-muted"
                                 />
-                            )}
+                                {label}
+                            </span>
                         </li>
                     ))}
                 </ol>
             </section>
 
-            <h2 className="mb-4 mt-10 text-lg font-bold">Passo a passo</h2>
+            <h2 className="section-title mt-12 mb-4">Passo a passo</h2>
 
-            <ol className="space-y-4">
+            <ol className="sheet row-divider">
                 <StepCard
                     number={1}
-                    icon={Brain}
                     title="Crie uma disciplina"
                     to="/disciplinas"
                     linkLabel="Ir para Disciplinas"
@@ -100,7 +101,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={2}
-                    icon={Library}
                     title="Envie os seus materiais"
                     to="/biblioteca"
                     linkLabel="Ir para a Biblioteca"
@@ -142,7 +142,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={3}
-                    icon={Sparkles}
                     title="A IA organiza os tópicos (automático)"
                     to="/disciplinas"
                     linkLabel="Ver os tópicos"
@@ -176,7 +175,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={4}
-                    icon={Layers3}
                     title="Gere flashcards e questões"
                     to="/flashcards"
                     linkLabel="Ir para Flashcards"
@@ -215,7 +213,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={5}
-                    icon={Target}
                     title="Estude"
                     to="/estudar"
                     linkLabel="Começar a estudar"
@@ -262,7 +259,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={6}
-                    icon={Bot}
                     title="Tire dúvidas com o Tutor IA"
                     to="/tutor"
                     linkLabel="Ir para o Tutor IA"
@@ -289,7 +285,6 @@ function RouteComponent() {
 
                 <StepCard
                     number={7}
-                    icon={ChartNoAxesCombined}
                     title="Acompanhe o seu desempenho"
                     to="/desempenho"
                     linkLabel="Ver o desempenho"
@@ -310,9 +305,9 @@ function RouteComponent() {
                 </StepCard>
             </ol>
 
-            <h2 className="mb-4 mt-10 text-lg font-bold">Perguntas frequentes</h2>
+            <h2 className="section-title mt-12 mb-4">Perguntas frequentes</h2>
 
-            <div className="divide-y rounded-3xl border bg-white">
+            <div className="sheet row-divider overflow-hidden">
                 <Question title="Quanto tempo demora para um material ficar pronto?">
                     Normalmente alguns minutos. Arquivos grandes demoram mais.
                     Você pode usar o resto do app enquanto espera; a tela se
@@ -345,18 +340,21 @@ function RouteComponent() {
                 </Question>
             </div>
 
-            <section className="mt-10 flex flex-col items-start justify-between gap-5 rounded-3xl bg-indigo-50 p-7 sm:flex-row sm:items-center">
+            <section
+                aria-labelledby="get-started"
+                className="sheet mt-12 flex flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center"
+            >
                 <div>
-                    <h2 className="text-xl font-bold">Pronto para começar?</h2>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <h2 id="get-started" className="section-title">
+                        Pronto para começar?
+                    </h2>
+                    <p className="mt-1.5 text-[15px] text-ink-soft">
                         O primeiro passo é criar a sua primeira disciplina.
                     </p>
                 </div>
-                <Link
-                    to="/disciplinas"
-                    className="flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
-                >
-                    Criar uma disciplina <ArrowRight size={16} />
+                <Link to="/disciplinas" className="btn btn-primary shrink-0">
+                    Criar uma disciplina
+                    <ArrowRight size={16} aria-hidden="true" />
                 </Link>
             </section>
         </div>
@@ -365,58 +363,52 @@ function RouteComponent() {
 
 function StepCard({
     number,
-    icon: Icon,
     title,
     to,
     linkLabel,
     children,
 }: {
     number: number;
-    icon: LucideIcon;
     title: string;
     to: AppPath;
     linkLabel: string;
     children: ReactNode;
 }) {
     return (
-        <li className="rounded-3xl border bg-white p-6">
-            <div className="flex items-start gap-4">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-600 text-sm font-bold text-white">
-                    {number}
-                </span>
-                <div className="min-w-0 flex-1">
-                    <h3 className="flex items-center gap-2 font-bold">
-                        <Icon size={18} className="text-indigo-600" />
-                        {title}
-                    </h3>
-                    <div className="mt-3 space-y-3 text-sm leading-6 text-slate-600">
-                        {children}
-                    </div>
-                    <Link
-                        to={to}
-                        className="-ml-2 mt-3 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
-                    >
-                        {linkLabel} <ArrowRight size={15} />
-                    </Link>
+        <li className="grid grid-cols-[2rem_1fr] gap-x-4 p-6 sm:grid-cols-[2.5rem_1fr] sm:gap-x-5 sm:p-7">
+            <span className="figure text-[34px] text-ink">
+                {number}
+            </span>
+            <div className="min-w-0">
+                <h3 className="pt-1 font-display text-[22px] leading-tight font-semibold">
+                    {title}
+                </h3>
+                <div className="mt-3 max-w-[65ch] space-y-3 text-[15px] leading-[1.65] text-ink-soft">
+                    {children}
                 </div>
+                <Link
+                    to={to}
+                    className="link mt-3 inline-flex min-h-10 items-center gap-1.5 text-[15px]"
+                >
+                    {linkLabel}
+                    <ArrowRight size={16} aria-hidden="true" />
+                </Link>
             </div>
         </li>
     );
 }
 
-/** A lista do que fazer, em ordem. */
 function Actions({ children }: { children: ReactNode }) {
     return (
-        <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-indigo-600">
+        <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-ink">
             {children}
         </ol>
     );
 }
 
-/** O nome de um botão, menu ou aviso, escrito igual ao que aparece na tela. */
 function UiName({ children }: { children: ReactNode }) {
     return (
-        <span className="whitespace-nowrap rounded-md bg-slate-100 px-1.5 py-0.5 text-[13px] font-semibold text-slate-800">
+        <span className="rounded-sm border border-rule bg-paper px-1.5 py-px text-[14px] font-semibold whitespace-nowrap text-ink">
             {children}
         </span>
     );
@@ -424,24 +416,35 @@ function UiName({ children }: { children: ReactNode }) {
 
 function Tip({ children }: { children: ReactNode }) {
     return (
-        <p className="flex gap-2 rounded-2xl bg-amber-50 p-4 text-amber-900">
-            <Lightbulb size={17} className="mt-1 shrink-0 text-amber-500" />
-            <span>{children}</span>
+        <p className="flex gap-3 rounded bg-paper px-4 py-3.5">
+            <Lightbulb
+                size={16}
+                strokeWidth={1.75}
+                aria-hidden="true"
+                className="mt-1 shrink-0 text-muted"
+            />
+            <span>
+                <b className="font-semibold text-ink">Dica:</b> {children}
+            </span>
         </p>
     );
 }
 
 function Question({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <details className="group p-5 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+        <details className="group [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[15px] font-semibold transition-colors hover:bg-paper">
                 {title}
                 <ChevronDown
                     size={18}
-                    className="shrink-0 text-slate-400 transition group-open:rotate-180"
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                    className="shrink-0 text-muted transition-transform group-open:rotate-180"
                 />
             </summary>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{children}</p>
+            <p className="max-w-[65ch] px-5 pb-5 text-[15px] leading-[1.65] text-ink-soft">
+                {children}
+            </p>
         </details>
     );
 }

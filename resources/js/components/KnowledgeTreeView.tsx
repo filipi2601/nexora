@@ -172,12 +172,46 @@ function flatten(
     node.children?.forEach((child) => flatten(child, nodes, edges, node));
 }
 
+function nodeClass(
+    node: TreeNode,
+    isRoot: boolean,
+    isActive: boolean,
+    isSelectable: boolean,
+): string {
+    if (isRoot) {
+        const hover =
+            isSelectable && node.depth > 0
+                ? "cursor-pointer hover:opacity-90"
+                : "";
+
+        return `font-display text-[15px] font-semibold text-white sm:text-base ${hover}`;
+    }
+
+    if (isActive) {
+        return "border-ink bg-ink text-[12px] font-semibold text-white sm:text-[13px]";
+    }
+
+    const weight =
+        node.depth === 1 ? "font-semibold text-ink" : "font-medium text-ink-soft";
+    const hover = isSelectable
+        ? "cursor-pointer hover:border-ink hover:bg-paper hover:text-ink"
+        : "";
+
+    return `border-rule-strong bg-sheet text-[12px] sm:text-[13px] ${weight} ${hover}`;
+}
+
+/**
+ * O mapa de conhecimento: a raiz leva a cor da disciplina (a capa do livro), os
+ * ramos são fios finos e cada tópico é uma etiqueta de papel.
+ */
 export default function KnowledgeTreeView({
     topics = [],
     onSelect,
+    color = "var(--color-ink)",
 }: {
     topics?: Topic[];
     onSelect?: (topicSlug: string) => void;
+    color?: string;
 }) {
     const compact = useCompact();
     const [active, setActive] = useState<number | string | null>(null);
@@ -233,7 +267,7 @@ export default function KnowledgeTreeView({
 
     if (!tree) {
         return (
-            <div className="flex min-h-40 items-center justify-center text-sm text-slate-400">
+            <div className="flex min-h-40 items-center justify-center px-4 text-[15px] text-ink-soft">
                 Nenhum tópico encontrado.
             </div>
         );
@@ -256,6 +290,14 @@ export default function KnowledgeTreeView({
             ? edges.filter(([parent]) => parent.id !== "virtual-root")
             : edges;
 
+    /**
+     * Com várias raízes, o root virtual ocupa o nível 0 sem ser desenhado: as
+     * raízes reais (nível 1) sobem para o topo e levam a cor da disciplina.
+     */
+    const rootDepth = tree.id === "virtual-root" ? 1 : 0;
+    const offsetY = rootDepth * spacing.level;
+    const isRoot = (node: TreeNode) => node.depth === rootDepth;
+
     const maxDepth = Math.max(...visibleNodes.map((node) => node.depth));
 
     const width = Math.max(
@@ -263,7 +305,8 @@ export default function KnowledgeTreeView({
         300,
     );
 
-    const height = (maxDepth + 1) * spacing.level + spacing.padY * 2;
+    const height =
+        (maxDepth - rootDepth) * spacing.level + spacing.padY * 2 + 16;
 
     const handleClick = (node: TreeNode) => {
         if (onSelect && node.depth > 0) {
@@ -294,20 +337,20 @@ export default function KnowledgeTreeView({
                             key={index}
                             d={`
                                 M ${parent.x + spacing.padX}
-                                  ${parent.y + spacing.padY}
+                                  ${parent.y - offsetY + spacing.padY}
 
                                 C ${parent.x + spacing.padX}
-                                  ${(parent.y + child.y) / 2 + spacing.padY},
+                                  ${(parent.y + child.y) / 2 - offsetY + spacing.padY},
 
                                   ${child.x + spacing.padX}
-                                  ${(parent.y + child.y) / 2 + spacing.padY},
+                                  ${(parent.y + child.y) / 2 - offsetY + spacing.padY},
 
                                   ${child.x + spacing.padX}
-                                  ${child.y + spacing.padY}
+                                  ${child.y - offsetY + spacing.padY}
                             `}
                             fill="none"
-                            stroke="#c7d2fe"
-                            strokeWidth="2"
+                            className="stroke-rule-strong"
+                            strokeWidth="1.25"
                         />
                     ))}
                 </svg>
@@ -319,40 +362,18 @@ export default function KnowledgeTreeView({
                         onClick={() => handleClick(node)}
                         style={{
                             left: node.x + spacing.padX,
-                            top: node.y + spacing.padY,
+                            top: node.y - offsetY + spacing.padY,
                             maxWidth: spacing.nodeW,
+                            ...(isRoot(node)
+                                ? { backgroundColor: color, borderColor: color }
+                                : {}),
                         }}
-                        className={`
-                            absolute
-                            -translate-x-1/2
-                            -translate-y-1/2
-                            rounded-xl
-                            border
-                            px-3
-                            py-2
-                            text-center
-                            text-[11px]
-                            font-semibold
-                            leading-tight
-                            shadow-sm
-                            transition
-                            hover:scale-105
-                            sm:text-xs
-
-                            ${
-                                node.depth === 0
-                                    ? "border-indigo-600 bg-indigo-600 text-white"
-                                    : active === node.topicId
-                                      ? "border-indigo-400 bg-indigo-50 text-indigo-700"
-                                      : "border-slate-200 bg-white text-slate-700"
-                            }
-
-                            ${
-                                onSelect && node.depth > 0
-                                    ? "cursor-pointer hover:border-indigo-400"
-                                    : ""
-                            }
-                        `}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 rounded border px-2.5 py-1.5 text-center leading-tight transition-colors ${nodeClass(
+                            node,
+                            isRoot(node),
+                            active === node.topicId,
+                            Boolean(onSelect),
+                        )}`}
                     >
                         {node.name}
                     </button>

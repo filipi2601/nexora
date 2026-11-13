@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Save, UserRound } from "lucide-react";
+import { Save, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
+import BackLink from "@/components/BackLink";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/lib/api";
 
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/_app/configuracoes/perfil")({
     component: RouteComponent,
 });
 
-function RouteComponent() { 
+function RouteComponent() {
     const navigate = useNavigate();
 
     const [name, setName] = useState("");
@@ -62,8 +63,8 @@ function RouteComponent() {
 
     if (loading) {
         return (
-            <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-                <div className="rounded-3xl border bg-white p-6">
+            <div className="page page-narrow">
+                <div className="sheet p-6 text-[15px] text-ink-soft">
                     Carregando perfil...
                 </div>
             </div>
@@ -71,30 +72,18 @@ function RouteComponent() {
     }
 
     return (
-        <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-            <button
-                type="button"
-                onClick={() =>
-                    navigate({
-                        to: "/configuracoes",
-                    })
-                }
-                className="-mt-2 mb-3 -ml-2 flex min-h-10 cursor-pointer items-center gap-2 px-2 text-sm text-slate-500 hover:text-slate-900"
-            >
-                <ArrowLeft size={16} />
-                Voltar para configurações
-            </button>
+        <div className="page page-narrow">
+            <BackLink to="/configuracoes" label="Voltar para configurações" />
 
             <PageHeader
-                eyebrow="Sua conta"
                 title="Perfil"
                 description="Atualize seus dados pessoais."
             />
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="rounded-3xl border bg-white p-6">
+            <form onSubmit={handleSubmit} className="sheet">
+                <div className="p-6">
                     <div className="mb-6 flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-rule-soft">
                             {avatarUrl ? (
                                 <img
                                     src={avatarUrl}
@@ -103,18 +92,20 @@ function RouteComponent() {
                                 />
                             ) : (
                                 <UserRound
-                                    size={28}
-                                    className="text-slate-400"
+                                    size={24}
+                                    strokeWidth={1.75}
+                                    aria-hidden="true"
+                                    className="text-muted"
                                 />
                             )}
                         </div>
 
-                        <div>
-                            <h2 className="font-semibold">
+                        <div className="min-w-0">
+                            <h2 className="section-title">
                                 Informações pessoais
                             </h2>
 
-                            <p className="text-sm text-slate-400">
+                            <p className="mt-1 text-sm text-muted">
                                 Esses dados serão usados na sua conta.
                             </p>
                         </div>
@@ -122,10 +113,7 @@ function RouteComponent() {
 
                     <div className="space-y-5">
                         <div>
-                            <label
-                                htmlFor="name"
-                                className="mb-2 block text-sm font-medium"
-                            >
+                            <label htmlFor="name" className="field-label">
                                 Nome
                             </label>
 
@@ -137,16 +125,13 @@ function RouteComponent() {
                                     setName(event.target.value)
                                 }
                                 required
-                                className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                                className="field"
                             />
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="email"
-                                className="mb-2 block text-sm font-medium"
-                            >
-                                Email
+                            <label htmlFor="email" className="field-label">
+                                E-mail
                             </label>
 
                             <input
@@ -157,15 +142,12 @@ function RouteComponent() {
                                     setEmail(event.target.value)
                                 }
                                 required
-                                className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                                className="field"
                             />
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="avatar_url"
-                                className="mb-2 block text-sm font-medium"
-                            >
+                            <label htmlFor="avatar_url" className="field-label">
                                 URL do avatar
                             </label>
 
@@ -177,19 +159,19 @@ function RouteComponent() {
                                     setAvatarUrl(event.target.value)
                                 }
                                 placeholder="https://..."
-                                className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                                className="field"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end border-t border-rule-soft px-6 py-4">
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="btn btn-primary"
                     >
-                        <Save size={16} />
+                        <Save size={16} aria-hidden="true" />
 
                         {saving ? "Salvando..." : "Salvar alterações"}
                     </button>

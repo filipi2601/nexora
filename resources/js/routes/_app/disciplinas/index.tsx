@@ -1,18 +1,12 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { AxiosError } from "axios";
-import {
-    BookOpen,
-    Layers3,
-    CircleHelp,
-    ArrowUpRight,
-    Trash2,
-    RefreshCw,
-} from "lucide-react";
+import { Plus, Trash2, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ProgressBar from "@/components/ProgressBar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { subjectInitial, useSubjectColors } from "@/lib/subject-colors";
 import type { Subject } from "@/types/api";
 import {
     Dialog,
@@ -45,6 +39,7 @@ function RouteComponent() {
     const [isOpen, setIsOpen] = useState(false);
     const [newSubjectName, setNewSubjectName] = useState("");
     const queryClient = useQueryClient();
+    const colors = useSubjectColors();
 
     const createSubjectMutation = useMutation({
         mutationFn: async ({ name }: { name: string }) => {
@@ -158,40 +153,134 @@ function RouteComponent() {
         deleteSubject.mutate(id);
     };
     return (
-        <div className="mx-auto max-w-6xl p-5 sm:p-8 lg:p-12">
+        <div className="page">
             <PageHeader
-                eyebrow="Experiências de aprendizagem"
                 title="Disciplinas"
                 description="Conteúdos, atividades e progresso organizados a partir dos seus materiais. Clique para ver os tópicos extraídos pela IA."
                 action={
                     <button
+                        type="button"
                         onClick={() => setIsOpen(true)}
                         disabled={createSubjectMutation.isPending}
-                        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+                        className="btn btn-primary"
                     >
+                        <Plus size={16} strokeWidth={1.75} aria-hidden="true" />
                         Nova disciplina
                     </button>
                 }
             />
-            {subjects && (
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+
+            {!subjects ? (
+                <p className="text-sm text-muted">Carregando disciplinas...</p>
+            ) : subjects.length === 0 ? (
+                <div className="sheet flex flex-wrap items-center justify-between gap-4 p-6">
+                    <p className="text-[15px] text-ink-soft">
+                        Crie uma disciplina e envie seus materiais para
+                        começar.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => setIsOpen(true)}
+                        disabled={createSubjectMutation.isPending}
+                        className="btn btn-secondary"
+                    >
+                        Nova disciplina
+                    </button>
+                </div>
+            ) : (
+                <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {subjects.map((s) => {
+                        const color = colors.byId(s.id);
+                        const progress = s.progress ?? 0;
+
                         return (
-                            <Link
+                            <li
                                 key={s.slug}
-                                to="/disciplinas/$slug"
-                                params={{ slug: s.slug }}
-                                className="block rounded-3xl border bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
+                                className="sheet relative flex overflow-hidden transition-colors hover:border-rule-strong"
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
-                                        <BookOpen />
+                                <span
+                                    aria-hidden="true"
+                                    className="flex w-10 shrink-0 items-end justify-center pb-4 font-display text-xl font-bold text-white"
+                                    style={{ backgroundColor: color }}
+                                >
+                                    {subjectInitial(s.name)}
+                                </span>
+
+                                <div className="flex min-w-0 flex-1 flex-col p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <h2 className="min-w-0 text-[17px] leading-snug font-semibold">
+                                            {/* The link covers the whole card;
+                                                the buttons sit above it. */}
+                                            <Link
+                                                to="/disciplinas/$slug"
+                                                params={{ slug: s.slug }}
+                                                className="line-clamp-2 after:absolute after:inset-0"
+                                            >
+                                                {s.name}
+                                            </Link>
+                                        </h2>
+
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleDelete(s.id);
+                                            }}
+                                            className="btn btn-ghost btn-icon relative z-10 -mt-1.5 -mr-2 text-muted hover:text-alta"
+                                            title="Excluir disciplina"
+                                            aria-label={`Excluir ${s.name}`}
+                                        >
+                                            <Trash2
+                                                size={16}
+                                                strokeWidth={1.75}
+                                                aria-hidden="true"
+                                            />
+                                        </button>
                                     </div>
 
-                                    <div className="flex items-center gap-1">
-                                        {/* Always available: a subject that is
-                                            already ready is exactly the one a
-                                            student may want to rebuild. */}
+                                    <p className="mt-1 text-[13px] text-muted">
+                                        {s.topics_count ?? 0} tópicos ·{" "}
+                                        {s.flashcards_count ?? 0} flashcards ·{" "}
+                                        {s.questions_count ?? 0} questões
+                                    </p>
+
+                                    {s.status === "processing" && (
+                                        <p className="mt-3">
+                                            <span className="stamp stamp-wait">
+                                                Regenerando tópicos...
+                                            </span>
+                                        </p>
+                                    )}
+
+                                    {s.status === "failed" && (
+                                        <div className="mt-3">
+                                            <span className="stamp stamp-error">
+                                                Falha ao regenerar tópicos
+                                            </span>
+                                            {s.topics_error && (
+                                                <p className="mt-1.5 text-sm text-alta">
+                                                    {s.topics_error}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-auto pt-5">
+                                        <div className="mb-2 flex items-baseline justify-between text-[13px] text-muted">
+                                            <span>Progresso</span>
+                                            <span className="font-semibold text-ink tabular-nums">
+                                                {progress}%
+                                            </span>
+                                        </div>
+                                        <ProgressBar
+                                            value={progress}
+                                            color={color}
+                                            label={`Progresso em ${s.name}`}
+                                        />
+                                    </div>
+
+                                    <div className="mt-4 -mb-1 flex border-t border-rule-soft pt-3">
                                         <button
                                             type="button"
                                             onClick={(e) => {
@@ -208,11 +297,7 @@ function RouteComponent() {
                                                 s.status === "processing" ||
                                                 regenerateTopicsMutation.isPending
                                             }
-                                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition hover:bg-indigo-50 ${
-                                                s.status === "failed"
-                                                    ? "text-red-600"
-                                                    : "text-indigo-600"
-                                            }`}
+                                            className="btn btn-ghost btn-sm relative z-10 -ml-2.5"
                                             title={
                                                 s.status === "processing"
                                                     ? "Regenerando tópicos"
@@ -222,77 +307,25 @@ function RouteComponent() {
                                             }
                                         >
                                             <RefreshCw
-                                                className={`h-4 w-4 ${
+                                                size={15}
+                                                strokeWidth={1.75}
+                                                aria-hidden="true"
+                                                className={
                                                     s.status === "processing"
                                                         ? "animate-spin"
                                                         : ""
-                                                }`}
+                                                }
                                             />
-
-                                            <span className="hidden sm:inline">
-                                                {s.status === "processing"
-                                                    ? "Regenerando..."
-                                                    : s.status === "failed"
-                                                      ? "Falha"
-                                                      : "Regenerar"}
-                                            </span>
+                                            {s.status === "processing"
+                                                ? "Regenerando..."
+                                                : "Regenerar tópicos"}
                                         </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleDelete(s.id);
-                                            }}
-                                            className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                            title="Excluir disciplina"
-                                            aria-label={`Excluir ${s.name}`}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-
-                                        <ArrowUpRight className="ml-1 text-slate-300" />
                                     </div>
                                 </div>
-                                <h2 className="mt-5 text-lg font-bold">
-                                    {s.name}
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-400">
-                                    {s.topics_count ?? 0} tópicos
-                                </p>
-                                {s.status === "failed" && s.topics_error && (
-                                    <p className="mt-2 text-xs font-medium text-red-500">
-                                        {s.topics_error}
-                                    </p>
-                                )}
-                                <div className="mt-6 grid grid-cols-2 gap-2">
-                                    <div className="rounded-xl bg-slate-50 p-3 text-xs">
-                                        <Layers3
-                                            size={15}
-                                            className="mb-2 text-indigo-500"
-                                        />
-                                        <b>{s.flashcards_count ?? 0} cards</b>
-                                    </div>
-                                    <div className="rounded-xl bg-slate-50 p-3 text-xs">
-                                        <CircleHelp
-                                            size={15}
-                                            className="mb-2 text-sky-500"
-                                        />
-                                        <b>{s.questions_count ?? 0} questões</b>
-                                    </div>
-                                </div>
-                                <div className="mt-6">
-                                    <div className="mb-2 flex justify-between text-xs">
-                                        <span>Progresso</span>
-                                        <b>{s.progress ?? 0}%</b>
-                                    </div>
-                                    <ProgressBar value={s.progress ?? 0} />
-                                </div>
-                            </Link>
+                            </li>
                         );
                     })}
-                </div>
+                </ul>
             )}
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -301,19 +334,23 @@ function RouteComponent() {
                         <DialogTitle>Adicionar disciplina</DialogTitle>
                     </DialogHeader>
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label className="mb-2 block text-sm font-medium">
+                            <label
+                                htmlFor="new-subject-name"
+                                className="field-label"
+                            >
                                 Disciplina
                             </label>
 
                             <input
+                                id="new-subject-name"
                                 type="text"
                                 value={newSubjectName}
                                 onChange={(e) =>
                                     setNewSubjectName(e.target.value)
                                 }
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                className="field"
                             />
                         </div>
 
@@ -330,7 +367,7 @@ function RouteComponent() {
                                     name: newSubjectName,
                                 });
                             }}
-                            className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+                            className="btn btn-primary w-full"
                         >
                             {createSubjectMutation.isPending
                                 ? "Criando..."

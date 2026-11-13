@@ -67,32 +67,44 @@ function Node({ node, depth = 0 }: { node: TreeTopic; depth?: number }) {
             <button
                 type="button"
                 onClick={() => hasKids && setOpen((o) => !o)}
-                className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pr-2 text-left text-sm hover:bg-slate-50"
-                style={{ paddingLeft: depth * 18 + 8 }}
+                aria-expanded={hasKids ? open : undefined}
+                className={`flex min-h-9 w-full items-center gap-1.5 rounded py-1.5 pr-2 text-left leading-snug transition-colors hover:bg-paper ${
+                    hasKids ? "cursor-pointer" : "cursor-default"
+                }`}
+                style={{ paddingLeft: depth * 18 + 6 }}
             >
                 {hasKids ? (
                     open ? (
                         <ChevronDown
-                            size={15}
-                            className="shrink-0 text-slate-400"
+                            size={16}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                            className="shrink-0 text-muted"
                         />
                     ) : (
                         <ChevronRight
-                            size={15}
-                            className="shrink-0 text-slate-400"
+                            size={16}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                            className="shrink-0 text-muted"
                         />
                     )
                 ) : (
-                    <Dot size={16} className="shrink-0 text-slate-300" />
+                    <Dot
+                        size={16}
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                        className="shrink-0 text-rule-strong"
+                    />
                 )}
 
                 <span
                     className={
                         depth === 0
-                            ? "font-bold text-slate-900"
+                            ? "text-[15px] font-semibold text-ink"
                             : depth === 1
-                              ? "font-semibold text-slate-700"
-                              : "text-slate-600"
+                              ? "text-sm font-medium text-ink-soft"
+                              : "text-sm text-muted"
                     }
                 >
                     {node.name}
@@ -123,7 +135,7 @@ export default function TopicOutline({
 
     if (!tree.length) {
         return (
-            <p className="px-2 py-4 text-sm text-slate-400">
+            <p className="px-3 py-4 text-[15px] text-ink-soft">
                 Nenhum tópico encontrado.
             </p>
         );

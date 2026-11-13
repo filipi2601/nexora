@@ -1,15 +1,26 @@
 const ProgressBar = ({
     value,
-    color = "bg-indigo-600",
+    color = "var(--color-ink)",
+    label,
 }: {
     value: number;
     color?: string;
+    label?: string;
 }) => {
+    const clamped = Math.max(0, Math.min(100, value));
+
     return (
-        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+            role="progressbar"
+            aria-valuenow={Math.round(clamped)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={label}
+            className="h-1 overflow-hidden bg-rule-soft"
+        >
             <div
-                className={`h-full rounded-full ${color}`}
-                style={{ width: `${value}%` }}
+                className="h-full transition-[width] duration-500 ease-out"
+                style={{ width: `${clamped}%`, backgroundColor: color }}
             />
         </div>
     );

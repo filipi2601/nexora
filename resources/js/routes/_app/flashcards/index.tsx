@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Layers3, ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import SubjectMark from "@/components/SubjectMark";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
 import type { SubjectWithFlashcards } from "@/types/api";
 import { useState } from "react";
 
@@ -20,26 +22,24 @@ function RouteComponent() {
     };
     const [slug, setSlug] = useState("todas");
     const navigate = useNavigate();
+    const colors = useSubjectColors();
 
     return (
-        <div className="mx-auto max-w-5xl p-5 sm:p-8 lg:p-12">
+        <div className="page">
             <PageHeader
-                eyebrow="Revisão espaçada"
                 title="Flashcards"
                 description="Revise primeiro o que está prestes a ser esquecido."
             />
             {subjects.length === 0 && (
-                <div className="rounded-3xl border border-dashed bg-white p-12 text-center">
-                    <Layers3 className="mx-auto text-slate-300" size={36} />
-                    <h2 className="mt-4 font-bold">Nenhuma disciplina ainda</h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                <div className="sheet p-6">
+                    <h2 className="text-[17px] font-semibold">
+                        Nenhuma disciplina ainda
+                    </h2>
+                    <p className="mt-1 text-[15px] text-ink-soft">
                         Crie uma disciplina e gere flashcards a partir dos seus
                         materiais.
                     </p>
-                    <Link
-                        to="/disciplinas"
-                        className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
-                    >
+                    <Link to="/disciplinas" className="btn btn-primary mt-5">
                         Ir para disciplinas
                     </Link>
                 </div>
@@ -47,69 +47,101 @@ function RouteComponent() {
 
             {subjects.length > 0 && (
                 <>
-                    <div className="rounded-3xl bg-slate-950 p-8 text-white">
-                        <Layers3 className="text-indigo-300" size={30} />
-                        <p className="mt-7 text-sm text-slate-400">
-                            Você possui
-                        </p>
-                        <h2 className="mt-1 text-3xl font-bold">
-                            {due_count} {due_count === 1 ? "card" : "cards"}{" "}
-                            para revisar hoje
-                        </h2>
-                        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <select
-                                value={slug}
-                                onChange={(e) => setSlug(e.target.value)}
-                                className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white outline-none"
-                            >
-                                <option value="todas" className="bg-slate-900">
-                                    Todas as disciplinas
-                                </option>
-                                {subjects.map((s) => (
-                                    <option
-                                        key={s.slug}
-                                        value={s.slug}
-                                        className="bg-slate-900"
-                                    >
-                                        {s.name}
+                    <section
+                        aria-labelledby="due-review"
+                        className="sheet grid lg:grid-cols-[1fr_auto]"
+                    >
+                        <div className="p-6 sm:p-7">
+                            <h2 id="due-review" className="section-title">
+                                Revisão de hoje
+                            </h2>
+                            <p className="mt-3 text-[17px] leading-8 text-ink-soft">
+                                Você possui{" "}
+                                <span className="figure text-[30px] text-ink">
+                                    {due_count}
+                                </span>{" "}
+                                {due_count === 1 ? "card" : "cards"} para
+                                revisar hoje.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3 border-t border-rule-soft p-6 sm:flex-row sm:items-end sm:p-7 lg:w-80 lg:flex-col lg:items-stretch lg:justify-center lg:border-t-0 lg:border-l">
+                            <div className="min-w-0 sm:flex-1 lg:flex-none">
+                                <label
+                                    htmlFor="review-subject"
+                                    className="field-label"
+                                >
+                                    Disciplina
+                                </label>
+                                <select
+                                    id="review-subject"
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value)}
+                                    className="field"
+                                >
+                                    <option value="todas">
+                                        Todas as disciplinas
                                     </option>
-                                ))}
-                            </select>
+                                    {subjects.map((s) => (
+                                        <option key={s.slug} value={s.slug}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <button
+                                type="button"
                                 onClick={() =>
                                     navigate({
                                         to: "/flashcards/revisar/$slug",
                                         params: { slug },
                                     })
                                 }
-                                className="flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 text-sm font-bold cursor-pointer"
+                                className="btn btn-primary"
                             >
                                 Começar revisão
-                                <ArrowRight size={17} />
+                                <ArrowRight size={16} aria-hidden="true" />
                             </button>
                         </div>
-                    </div>
-                    <h2 className="mb-4 mt-9 font-bold">Por disciplina</h2>
-                    <div className="divide-y rounded-2xl border bg-white">
-                        {subjects.map((subject) => (
-                            <Link
-                                to="/flashcards/$slug"
-                                params={{ slug: subject.slug }}
-                                key={subject.id}
-                                className="block"
-                            >
-                                <div className="flex items-center justify-between p-5">
-                                    <span className="text-sm font-semibold">
-                                        {subject.name}
-                                    </span>
-                                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                                        {(subject.flashcards ?? []).length}{" "}
-                                        cards
-                                    </span>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                    </section>
+
+                    <section aria-labelledby="by-subject" className="mt-12">
+                        <h2 id="by-subject" className="section-title mb-4">
+                            Por disciplina
+                        </h2>
+                        <ul className="sheet row-divider">
+                            {subjects.map((subject) => {
+                                const count = (subject.flashcards ?? []).length;
+
+                                return (
+                                    <li key={subject.id}>
+                                        <Link
+                                            to="/flashcards/$slug"
+                                            params={{ slug: subject.slug }}
+                                            className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-paper"
+                                        >
+                                            <SubjectMark
+                                                name={subject.name}
+                                                color={colors.byId(subject.id)}
+                                                size="sm"
+                                            />
+                                            <span className="min-w-0 flex-1 truncate font-semibold">
+                                                {subject.name}
+                                            </span>
+                                            <span className="shrink-0 text-sm text-muted tabular-nums">
+                                                {count} cards
+                                            </span>
+                                            <ChevronRight
+                                                size={16}
+                                                strokeWidth={1.75}
+                                                aria-hidden="true"
+                                                className="shrink-0 text-muted"
+                                            />
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
                 </>
             )}
         </div>

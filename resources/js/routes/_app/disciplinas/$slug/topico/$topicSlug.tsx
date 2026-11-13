@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, BookOpen, FileText } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
+import BackLink from "@/components/BackLink";
+import SubjectBand from "@/components/SubjectBand";
 import { api } from "@/lib/api";
+import { useSubjectColors } from "@/lib/subject-colors";
+import type { Subject } from "@/types/api";
 
 export const Route = createFileRoute("/_app/disciplinas/$slug/topico/$topicSlug")(
     {
@@ -18,81 +22,118 @@ export const Route = createFileRoute("/_app/disciplinas/$slug/topico/$topicSlug"
 function RouteComponent() {
     const { slug, topicSlug } = Route.useParams();
     const { data: topic } = Route.useLoaderData();
+    const { data: subjects } = useQuery<Subject[]>({
+        queryKey: ["subjects"],
+        queryFn: async () => (await api.get("/api/subjects")).data,
+    });
+    const colors = useSubjectColors();
+    const subject = subjects?.find((item) => item.slug === slug);
+    const color = colors.byId(subject?.id);
 
     return (
-        <div className="mx-auto max-w-4xl p-5 sm:p-8 lg:p-12">
-            <Link
-                to="/disciplinas/$slug"
-                params={{ slug }}
-                className="-mt-2 mb-2 -ml-2 inline-flex min-h-10 items-center gap-1 px-2 text-sm font-medium text-slate-400 hover:text-slate-700"
-            >
-                <ArrowLeft size={16} />
-                Voltar para disciplina
-            </Link>
+        <div className="page page-narrow">
+            <BackLink
+                to={`/disciplinas/${slug}`}
+                label="Voltar para disciplina"
+            />
             {topic ? (
                 <>
-                    <nav className="mb-4 flex flex-wrap items-center gap-1 text-xs text-slate-400">
-                        {topic.ancestors.map((ancestor: any) => (
-                            <span key={ancestor.id} className="flex items-center gap-1">
-                                <Link
-                                    to="/disciplinas/$slug/topico/$topicSlug"
-                                    params={{ slug, topicSlug: ancestor.slug }}
-                                    className="transition hover:text-slate-700"
-                                >
-                                    {ancestor.name}
-                                </Link>
-                                <ChevronRight size={13} />
-                            </span>
-                        ))}
-
-                        <span className="font-semibold text-slate-700">
-                            {topic.name}
-                        </span>
-                    </nav>
-
-                    <PageHeader
-                        eyebrow="Tópico"
+                    <SubjectBand
+                        color={color}
                         title={topic.name}
                         description="Conceito extraído pela IA a partir dos seus materiais."
+                        breadcrumb={
+                        <nav aria-label="Caminho do tópico" className="mb-3">
+                            <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-white/85">
+                                {subject && (
+                                    <li className="flex items-center gap-1">
+                                        <Link
+                                            to="/disciplinas/$slug"
+                                            params={{ slug }}
+                                            className="font-semibold underline decoration-white/40 underline-offset-3 transition-colors hover:text-white hover:decoration-white"
+                                        >
+                                            {subject.name}
+                                        </Link>
+                                        <ChevronRight
+                                            size={14}
+                                            strokeWidth={1.75}
+                                            aria-hidden="true"
+                                        />
+                                    </li>
+                                )}
+                                {topic.ancestors.map((ancestor: any) => (
+                                    <li
+                                        key={ancestor.id}
+                                        className="flex items-center gap-1"
+                                    >
+                                        <Link
+                                            to="/disciplinas/$slug/topico/$topicSlug"
+                                            params={{
+                                                slug,
+                                                topicSlug: ancestor.slug,
+                                            }}
+                                            className="underline decoration-white/40 underline-offset-3 transition-colors hover:text-white hover:decoration-white"
+                                        >
+                                            {ancestor.name}
+                                        </Link>
+                                        <ChevronRight
+                                            size={14}
+                                            strokeWidth={1.75}
+                                            aria-hidden="true"
+                                        />
+                                    </li>
+                                ))}
+                                <li aria-current="page" className="text-white">
+                                    {topic.name}
+                                </li>
+                            </ol>
+                        </nav>
+                        }
                     />
 
-                    <section className="rounded-3xl border bg-white p-6 sm:p-8">
-                        <div className="flex items-center gap-2 text-sm font-bold text-indigo-600">
-                            <BookOpen size={16} />
+                    <section aria-labelledby="topic-summary">
+                        <h2 id="topic-summary" className="section-title mb-4">
                             Resumo
+                        </h2>
+                        <div className="sheet p-6 sm:p-7">
+                            <p className="max-w-[65ch] text-base leading-7 text-ink-soft">
+                                {topic.description}
+                            </p>
                         </div>
-
-                        <p className="mt-4 text-sm leading-7 text-slate-600">
-                            {topic.description}
-                        </p>
                     </section>
 
-                    <section className="mt-5 rounded-3xl border bg-white p-6">
-                        <h2 className="text-sm font-bold">Subtópicos</h2>
+                    <section aria-labelledby="topic-children" className="mt-10">
+                        <h2 id="topic-children" className="section-title mb-4">
+                            Subtópicos
+                        </h2>
 
                         {topic.children?.length > 0 ? (
-                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <ul className="sheet row-divider">
                                 {topic.children.map((child: any) => (
-                                    <Link
-                                        key={child.id}
-                                        to="/disciplinas/$slug/topico/$topicSlug"
-                                        params={{
-                                            slug,
-                                            topicSlug: child.slug,
-                                        }}
-                                        className="flex items-center gap-3 rounded-xl border p-4 text-sm font-semibold hover:border-indigo-300 hover:bg-indigo-50/50"
-                                    >
-                                        <FileText
-                                            size={16}
-                                            className="text-indigo-500"
-                                        />
-
-                                        {child.name}
-                                    </Link>
+                                    <li key={child.id}>
+                                        <Link
+                                            to="/disciplinas/$slug/topico/$topicSlug"
+                                            params={{
+                                                slug,
+                                                topicSlug: child.slug,
+                                            }}
+                                            className="flex min-h-12 items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-paper"
+                                        >
+                                            <span className="min-w-0 font-semibold">
+                                                {child.name}
+                                            </span>
+                                            <ChevronRight
+                                                size={16}
+                                                strokeWidth={1.75}
+                                                aria-hidden="true"
+                                                className="shrink-0 text-muted"
+                                            />
+                                        </Link>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
                         ) : (
-                            <p className="mt-3 text-sm text-slate-400">
+                            <p className="sheet p-6 text-[15px] text-ink-soft">
                                 Este tópico não possui subtópicos — é um
                                 conceito final do mapa.
                             </p>
@@ -100,7 +141,7 @@ function RouteComponent() {
                     </section>
                 </>
             ) : (
-                <p className="text-sm text-slate-400">
+                <p className="sheet p-6 text-[15px] text-ink-soft">
                     Tópico não encontrado. Verifique se o link está correto.
                 </p>
             )}

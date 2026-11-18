@@ -11,8 +11,6 @@ use Illuminate\Support\Collection;
  *
  * Entradas: a taxa de acerto do aluno no tópico (0 a 100%) e os dias desde a última tentativa (0 a 30).
  * Saída: a prioridade de revisão (0 a 100).
- *
- * Tópicos nunca praticados ficam de fora: sem tentativas, não há taxa de acerto para fuzzificar.
  */
 class ReviewPriorityService
 {
@@ -53,19 +51,7 @@ class ReviewPriorityService
         'alto' => ['recente' => 'baixa', 'media' => 'baixa', 'antiga' => 'media'],
     ];
 
-    /**
-     * A inferência de Mamdani em 4 passos, com tudo o que a tela precisa para explicá-la.
-     *
-     * @return array{
-     *     fuzzified: array{acerto: array<string, float>, recencia: array<string, float>},
-     *     rules: list<array{acerto: string, recencia: string, prioridade: string, strength: float}>,
-     *     activation: array<string, float>,
-     *     aggregated: list<array{z: int, degree: float}>,
-     *     centroid: float,
-     *     output_degrees: array<string, float>,
-     *     label: string,
-     * }
-     */
+    // A inferência de Mamdani em 4 passos, com tudo o que a tela precisa para explicá-la.
     public function evaluate(float $accuracy, float $daysSinceLastAttempt): array
     {
         // Passo 1, fuzzificação: o grau de cada entrada em cada um dos seus termos.
@@ -102,7 +88,7 @@ class ReviewPriorityService
         }
 
         // Passo 4, defuzzificação pelo centróide: Σ z·μ(z) / Σ μ(z) nos pontos do passo 3.
-        $weighted = array_sum(array_map(fn (array $point): float => $point['z'] * $point['degree'], $aggregated));
+        $weighted = array_sum(array_map(fn(array $point): float => $point['z'] * $point['degree'], $aggregated));
         $centroid = $weighted / array_sum(array_column($aggregated, 'degree'));
         $outputDegrees = $this->fuzzify('prioridade', $centroid);
 
@@ -117,11 +103,6 @@ class ReviewPriorityService
         ];
     }
 
-    /**
-     * O sistema como dados, para desenhar os gráficos e a tabela de regras na tela.
-     *
-     * @return array{inputs: list<array<string, mixed>>, output: array<string, mixed>, rules: list<array{acerto: string, recencia: string, prioridade: string}>}
-     */
     public function describe(): array
     {
         $rules = [];
@@ -144,8 +125,6 @@ class ReviewPriorityService
      *
      * Com $withExplanation, cada tópico traz também a inferência passo a passo, com os mesmos
      * números usados para ordenar.
-     *
-     * @return Collection<int, array{topic_id: int, topic: string, subject: string, attempts: int, accuracy: float, days_since_last_attempt: float, priority: int, label: string}>
      */
     public function forUser(int $userId, bool $withExplanation = false): Collection
     {
@@ -182,47 +161,29 @@ class ReviewPriorityService
     /**
      * Grau de pertinência de x num termo [a, b, c, d]: 1 no topo, (x − a)/(b − a) na subida,
      * (d − x)/(d − c) na descida e 0 fora.
-     *
-     * @param  array{0: int, 1: int, 2: int, 3: int}  $points
      */
     private function degree(float $x, array $points): float
     {
         [$a, $b, $c, $d] = $points;
-
-        if ($x >= $b && $x <= $c) {
-            return 1.0;
-        }
-
-        if ($x > $a && $x < $b) {
-            return ($x - $a) / ($b - $a);
-        }
-
-        if ($x > $c && $x < $d) {
-            return ($d - $x) / ($d - $c);
-        }
-
+        if ($x >= $b && $x <= $c) return 1.0;
+        if ($x > $a && $x < $b) return ($x - $a) / ($b - $a);
+        if ($x > $c && $x < $d) return ($d - $x) / ($d - $c);
         return 0.0;
     }
 
     /**
      * O grau de um valor em cada termo da variável. Valores fora do universo vão para a borda
      * mais próxima: 45 dias contam como 30.
-     *
-     * @return array<string, float>
      */
     private function fuzzify(string $variable, float $value): array
     {
         ['min' => $min, 'max' => $max, 'terms' => $terms] = self::VARIABLES[$variable];
         $value = max($min, min($max, $value));
 
-        return array_map(fn (array $points): float => $this->degree($value, $points), $terms);
+        return array_map(fn(array $points): float => $this->degree($value, $points), $terms);
     }
 
-    /**
-     * Uma variável no formato da tela: nome, universo e a lista de termos com seus pontos.
-     *
-     * @return array{name: string, min: int, max: int, terms: list<array{name: string, points: array{0: int, 1: int, 2: int, 3: int}}>}
-     */
+    // Uma variável no formato da tela: nome, universo e a lista de termos com seus pontos.
     private function variable(string $name): array
     {
         $terms = [];

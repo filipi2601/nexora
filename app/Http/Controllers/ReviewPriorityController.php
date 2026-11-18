@@ -10,9 +10,6 @@ class ReviewPriorityController extends Controller
 {
     public function __construct(private ReviewPriorityService $reviewPriority) {}
 
-    /**
-     * O sistema fuzzy (variáveis e regras) e, para cada tópico praticado, a inferência passo a passo.
-     */
     public function index(Request $request): JsonResponse
     {
         return response()->json([

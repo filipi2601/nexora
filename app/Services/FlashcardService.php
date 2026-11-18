@@ -14,7 +14,7 @@ class FlashcardService
         return $this->dueFlashcardsQuery($userId, $subjectSlug)
             ->with(['subject', 'topic'])
             ->inRandomOrder()
-            ->when($limit, fn ($query) => $query->limit($limit))
+            ->when($limit, fn($query) => $query->limit($limit))
             ->get();
     }
 
@@ -26,15 +26,15 @@ class FlashcardService
     private function dueFlashcardsQuery(int $userId, ?string $subjectSlug = null): Builder
     {
         return Flashcard::query()
-            ->whereHas('subject', fn ($subject) => $subject->where('user_id', $userId))
+            ->whereHas('subject', fn($subject) => $subject->where('user_id', $userId))
             ->where(function ($query) use ($userId) {
-                $query->whereDoesntHave('reviews', fn ($reviews) => $reviews->where('user_id', $userId))
-                    ->orWhereHas('reviews', fn ($reviews) => $reviews
+                $query->whereDoesntHave('reviews', fn($reviews) => $reviews->where('user_id', $userId))
+                    ->orWhereHas('reviews', fn($reviews) => $reviews
                         ->where('user_id', $userId)
                         ->whereDate('due_date', '<=', now()));
             })
-            ->when($subjectSlug, fn ($query) => $query
-                ->whereHas('subject', fn ($subject) => $subject->where('slug', $subjectSlug)));
+            ->when($subjectSlug, fn($query) => $query
+                ->whereHas('subject', fn($subject) => $subject->where('slug', $subjectSlug)));
     }
 
     // Registra a avaliação do aluno e recalcula o estado de repetição espaçada (SM-2)
@@ -45,7 +45,7 @@ class FlashcardService
             'flashcard_id' => $flashcard->id,
         ]);
 
-        if (! $review->exists) {
+        if (!$review->exists) {
             $review->ease_factor = 2.5;
             $review->interval_days = 0;
             $review->repetitions = 0;

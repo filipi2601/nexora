@@ -65,7 +65,6 @@ class StudySessionController extends Controller
     public function finish(Request $request, StudySession $studySession): JsonResponse
     {
         $this->authorizeSession($request, $studySession);
-
         return response()->json(['session' => $this->studySessionService->finish($studySession)]);
     }
 

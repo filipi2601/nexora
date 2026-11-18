@@ -54,9 +54,6 @@ class TutorService
             'content' => $userMessage,
         ]);
 
-        // The messages() relation already orders by created_at, so chaining
-        // orderByDesc() would be a no-op and the limit would keep the OLDEST
-        // messages. created_at also ties within the same second, so sort by id.
         $history = $conversation->messages()
             ->reorderDesc('id')
             ->limit(self::HISTORY_LIMIT)
@@ -93,15 +90,15 @@ class TutorService
         $materialsContext = $subject->materials()
             ->whereNotNull('ai_summary')
             ->get()
-            ->map(fn ($m) => "## {$m->title}\n\n{$m->ai_summary}")
+            ->map(fn($m) => "## {$m->title}\n\n{$m->ai_summary}")
             ->implode("\n\n---\n\n");
 
         $focus = '';
         if ($conversation->topic_id) {
             $topic = $conversation->topic;
             $focus = "\n\nO aluno está estudando especificamente o tópico \"{$topic->name}\" agora. "
-                .'Priorize respostas relacionadas a esse tópico, mas use o contexto da disciplina '
-                .'inteira se a pergunta do aluno for além dele.';
+                . 'Priorize respostas relacionadas a esse tópico, mas use o contexto da disciplina '
+                . 'inteira se a pergunta do aluno for além dele.';
         }
 
         return "Disciplina: {$subject->name}\n\nConteúdo da disciplina:\n{$materialsContext}{$focus}";

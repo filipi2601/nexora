@@ -16,7 +16,6 @@ class MaterialController extends Controller
     public function index(): JsonResponse
     {
         $materials = $this->materialService->getMaterials(auth()->id());
-
         return response()->json($materials);
     }
 
@@ -26,13 +25,12 @@ class MaterialController extends Controller
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:pdf,docx,pptx', 'max:10240'],
-            'subject_id' => ['nullable', 'integer', Rule::exists('subjects', 'id')->where(fn ($query) => $query->where('user_id', $userId))],
+            'subject_id' => ['nullable', 'integer', Rule::exists('subjects', 'id')->where(fn($query) => $query->where('user_id', $userId))],
         ], [
             'file.mimes' => 'Envie um arquivo PDF, DOCX ou PPTX. Arquivos .doc e .ppt antigos podem ser salvos como .docx ou .pptx no Word ou no PowerPoint.',
         ]);
 
         $material = $this->materialService->upload($request->file('file'), $userId, $request->input('subject_id'));
-
         return response()->json($material, 201);
     }
 
@@ -42,10 +40,7 @@ class MaterialController extends Controller
 
         $this->authorize('delete', $material);
 
-        if ($material->storage_path) {
-            Storage::disk('public')->delete($material->storage_path);
-        }
-
+        if ($material->storage_path) Storage::disk('public')->delete($material->storage_path);
         $material->delete();
 
         return response()->json([

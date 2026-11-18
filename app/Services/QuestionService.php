@@ -18,8 +18,6 @@ class QuestionService
      * Questões recomendadas, na ordem da prioridade de revisão calculada por lógica fuzzy:
      * primeiro os tópicos de prioridade alta, depois os tópicos ainda não praticados e,
      * por fim, os demais tópicos praticados, da maior para a menor prioridade.
-     *
-     * @return Collection<int, Question>
      */
     public function getRecommended(int $userId): Collection
     {
@@ -27,14 +25,14 @@ class QuestionService
 
         $ids = $this->ownedQuestions($userId)
             ->get(['id', 'topic_id'])
-            ->sortBy(fn (Question $question): array => $this->recommendationRank($priorities->get($question->topic_id), $question->id))
+            ->sortBy(fn(Question $question): array => $this->recommendationRank($priorities->get($question->topic_id), $question->id))
             ->take(self::PRACTICE_LIMIT)
             ->pluck('id');
 
         return $this->practiceQuery()
             ->whereKey($ids)
             ->get()
-            ->sortBy(fn (Question $question): int => $ids->search($question->id))
+            ->sortBy(fn(Question $question): int => $ids->search($question->id))
             ->values();
     }
 
@@ -66,7 +64,7 @@ class QuestionService
     public function getBySubject(string $slug, int $userId): Collection
     {
         return $this->practiceQuery()
-            ->whereHas('subject', fn ($subject) => $subject->where('slug', $slug)->where('user_id', $userId))
+            ->whereHas('subject', fn($subject) => $subject->where('slug', $slug)->where('user_id', $userId))
             ->inRandomOrder()
             ->limit(self::PRACTICE_LIMIT)
             ->get();
@@ -97,21 +95,16 @@ class QuestionService
         ]);
     }
 
-    /**
-     * Questões das disciplinas do aluno, sem carregar relações (servem para contar e ordenar).
-     */
+    // Questões das disciplinas do aluno, sem carregar relações (servem para contar e ordenar).
     private function ownedQuestions(int $userId): Builder
     {
         return Question::query()
-            ->whereHas('subject', fn ($subject) => $subject->where('user_id', $userId));
+            ->whereHas('subject', fn($subject) => $subject->where('user_id', $userId));
     }
 
     /**
      * Chave de ordenação das recomendadas: [grupo, −prioridade, id].
      * Grupo 0 = tópico de prioridade alta; 1 = tópico nunca praticado; 2 = os demais praticados.
-     *
-     * @param  array{priority: int, label: string}|null  $topic
-     * @return array{0: int, 1: int, 2: int}
      */
     private function recommendationRank(?array $topic, int $questionId): array
     {

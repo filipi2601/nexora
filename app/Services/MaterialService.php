@@ -21,7 +21,7 @@ class MaterialService
         if ($subjectId !== null) {
             $subject = Subject::query()->where('id', $subjectId)->where('user_id', $userId)->first();
 
-            if (! $subject) {
+            if (!$subject) {
                 throw ValidationException::withMessages([
                     'subject_id' => 'A disciplina selecionada não pertence ao usuário.',
                 ]);
@@ -73,10 +73,7 @@ class MaterialService
 
     protected function regenerateTopicsWhenSafe(Subject $subject): void
     {
-        if ($subject->hasDependentContent()) {
-            return;
-        }
-
+        if ($subject->hasDependentContent()) return;
         GenerateTopics::dispatch($subject);
     }
 
@@ -92,9 +89,7 @@ class MaterialService
             'status' => 'processing',
         ]);
         $filePath = Storage::disk('public')->path($material->storage_path);
-
         $text = $this->fileService->extractTextFromFile($filePath, $material->mime_type, $material->user);
-
         $summary = $this->fileService->generateSummary($text, $material->user);
 
         $material->update([

@@ -65,9 +65,7 @@ class QuestionController extends Controller
     {
         $subject = Subject::where('slug', $slug)->where('user_id', auth()->id())->first();
 
-        if (! $subject) {
-            return response()->json(['message' => 'Disciplina não encontrada.'], 404);
-        }
+        if (!$subject) return response()->json(['message' => 'Disciplina não encontrada.'], 404);
 
         $subject->update(['questions_status' => 'processing']);
         GenerateQuestions::dispatch($subject, count: 5);

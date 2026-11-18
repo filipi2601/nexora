@@ -27,11 +27,6 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 3600;
 
-    /**
-     * Slugs already taken in this subject while the tree is being written.
-     *
-     * @var array<string, true>
-     */
     protected array $usedSlugs = [];
 
     public function __construct(
@@ -56,9 +51,8 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
 
     public function handle(AiProviderService $aiProviderService): void
     {
-        if ($this->subject->hasDependentContent() && ! $this->allowDestructive) {
+        if ($this->subject->hasDependentContent() && !$this->allowDestructive) {
             $this->abortBecauseContentWouldBeLost();
-
             return;
         }
 
@@ -67,11 +61,10 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
 
             if ($materials->isEmpty()) {
                 $this->subject->update(['status' => 'ready']);
-
                 return;
             }
 
-            $content = $materials->map(fn ($m) => "## Material: {$m->title}\n\n{$m->ai_summary}")->implode("\n\n---\n\n");
+            $content = $materials->map(fn($m) => "## Material: {$m->title}\n\n{$m->ai_summary}")->implode("\n\n---\n\n");
 
             $tree = $this->requestTree(
                 $content,
@@ -80,9 +73,7 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
 
             DB::transaction(function () use ($tree) {
                 $this->subject->topics()->delete();
-
                 $this->usedSlugs = [];
-
                 $this->saveTree($tree, parentId: null, depth: 0);
             });
 
@@ -91,11 +82,6 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
                 'topics_generated_at' => now(),
             ]);
         } catch (Throwable $e) {
-            // The subject stays "processing" between attempts. Marking it
-            // "failed" here would show a false failure while up to two
-            // retries are still pending, and it would also stop the frontend
-            // from polling, leaving the UI stale even if a retry succeeds.
-            // failed() owns the final "failed" state.
             throw $e;
         }
     }
@@ -149,13 +135,6 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
         return $this->decodeAiJson($response->text, 'tópicos');
     }
 
-    /**
-     * Build a slug that is unique within the subject.
-     *
-     * The AI can return sibling nodes with the same name, and topics.slug is
-     * unique per subject, so a plain Str::slug() would abort the whole
-     * transaction on a duplicate.
-     */
     protected function uniqueSlug(string $name): string
     {
         $base = Str::slug($name);
@@ -164,7 +143,7 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
 
         while (isset($this->usedSlugs[$slug])) {
             $suffix++;
-            $slug = $base.'-'.$suffix;
+            $slug = $base . '-' . $suffix;
         }
 
         $this->usedSlugs[$slug] = true;
@@ -184,9 +163,7 @@ class GenerateTopics implements ShouldBeUnique, ShouldQueue
                 'depth' => $depth,
             ]);
 
-            if (! empty($node['children'])) {
-                $this->saveTree($node['children'], $topic->id, $depth + 1);
-            }
+            if (!empty($node['children'])) $this->saveTree($node['children'], $topic->id, $depth + 1);
         }
     }
 

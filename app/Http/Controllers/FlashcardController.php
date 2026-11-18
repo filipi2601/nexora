@@ -29,7 +29,7 @@ class FlashcardController extends Controller
     {
         $subject = $this->subjectService->getSubject($slug, auth()->id());
 
-        if (! $subject) {
+        if (!$subject) {
             return response()->json([
                 'message' => 'Disciplina não encontrada.',
             ], 404);
@@ -48,7 +48,6 @@ class FlashcardController extends Controller
         $flashcard = Flashcard::where('id', $request->route('id'))->with('subject')->firstOrFail();
 
         $this->authorize('delete', $flashcard);
-
         $flashcard->delete();
 
         return response()->json([
@@ -58,7 +57,7 @@ class FlashcardController extends Controller
 
     public function generate(Request $request, int $topicId): JsonResponse
     {
-        $topic = Topic::whereHas('subject', fn ($q) => $q->where('user_id', auth()->id()))->findOrFail($topicId);
+        $topic = Topic::whereHas('subject', fn($q) => $q->where('user_id', auth()->id()))->findOrFail($topicId);
 
         $topic->update(['flashcards_status' => 'processing']);
         GenerateFlashcards::dispatch($topic);

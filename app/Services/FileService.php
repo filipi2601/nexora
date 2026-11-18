@@ -33,20 +33,10 @@ class FileService
      */
     protected const MAX_XML_BYTES = 50 * 1024 * 1024;
 
-    /**
-     * Abaixo disso, o texto não serve para gerar tópicos e questões.
-     */
     protected const MIN_TEXT_LENGTH = 50;
 
-    /**
-     * Quanto a IA pode levar para transcrever um PDF escaneado, em segundos. O padrão do
-     * cliente HTTP (30 s) é pouco para um documento de várias páginas.
-     */
     protected const OCR_TIMEOUT = 180;
 
-    /**
-     * O texto do arquivo. Com $user, um PDF escaneado é lido pela IA que ele escolheu para o OCR.
-     */
     public function extractTextFromFile(string $filePath, string $mimeType, ?User $user = null): string
     {
         $text = match ($mimeType) {
@@ -56,7 +46,7 @@ class FileService
             default => throw new \InvalidArgumentException("Tipo de arquivo não suportado: {$mimeType}"),
         };
 
-        if (! $this->hasEnoughText($text)) {
+        if (!$this->hasEnoughText($text)) {
             throw new \RuntimeException('Texto extraído vazio ou insuficiente: o arquivo pode ter só imagens, como um PDF escaneado.');
         }
 
@@ -95,11 +85,6 @@ class FileService
         return $response->text;
     }
 
-    /**
-     * O texto de um PDF. Um PDF escaneado (só imagens) não tem texto; nesse caso, o provedor
-     * ativo do aluno lê as páginas e transcreve o texto (OCR), se ele ler PDF e tiver chave.
-     * Não trocamos por outro provedor sem o aluno saber.
-     */
     protected function extractFromPdf(string $filePath, ?User $user = null): string
     {
         $text = (new PdfParser)->parseFile($filePath)->getText();
@@ -111,10 +96,6 @@ class FileService
         return $this->transcribeScannedPdf($filePath, $user);
     }
 
-    /**
-     * OCR: o próprio PDF vai para a IA, que o lê como imagens. Só a OpenAI e o Gemini aceitam
-     * PDF; a chave é a do aluno, se ele salvou uma, ou a do app.
-     */
     protected function transcribeScannedPdf(string $filePath, ?User $user = null): string
     {
         $options = $this->aiProviderService->promptOptions($user);
@@ -145,9 +126,6 @@ class FileService
         return mb_strlen(trim($text)) >= self::MIN_TEXT_LENGTH;
     }
 
-    /**
-     * Um .docx é um ZIP; o texto fica em word/document.xml, e cada parágrafo vira uma linha.
-     */
     protected function extractFromDocx(string $filePath): string
     {
         $zip = $this->openOfficeFile($filePath);
@@ -159,10 +137,6 @@ class FileService
         }
     }
 
-    /**
-     * Um .pptx é um ZIP com um XML por slide (ppt/slides/slide1.xml, slide2.xml...). Os slides
-     * vão na ordem do número, separados por uma linha em branco; slides só com imagem ficam de fora.
-     */
     protected function extractFromPptx(string $filePath): string
     {
         $zip = $this->openOfficeFile($filePath);
@@ -206,19 +180,11 @@ class FileService
         return $zip->getFromName($name);
     }
 
-    /**
-     * Os parágrafos (p) de um XML do Office, cada um com o texto dos seus trechos (t) juntos.
-     *
-     * Só os elementos t trazem o texto visível: texto apagado numa revisão e códigos de campo
-     * ficam de fora.
-     *
-     * @return list<string>
-     */
     protected function paragraphs(string $xml, string $namespace): array
     {
         $document = new DOMDocument;
 
-        if (! $document->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING)) {
+        if (!$document->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING)) {
             throw new \RuntimeException('Não foi possível ler o conteúdo do arquivo: ele parece estar corrompido.');
         }
 
@@ -226,14 +192,11 @@ class FileService
 
         foreach ($document->getElementsByTagNameNS($namespace, 'p') as $paragraph) {
             $text = '';
-
             foreach ($paragraph->getElementsByTagNameNS($namespace, 't') as $run) {
                 $text .= $run->textContent;
             }
 
-            if (trim($text) !== '') {
-                $paragraphs[] = $text;
-            }
+            if (trim($text) !== '') $paragraphs[] = $text;
         }
 
         return $paragraphs;

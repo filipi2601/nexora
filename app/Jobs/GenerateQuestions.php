@@ -55,13 +55,12 @@ class GenerateQuestions implements ShouldBeUnique, ShouldQueue
             ]);
 
             $this->subject->update(['questions_status' => 'ready']);
-
             return;
         }
 
         $options = $aiProviderService->promptOptions($this->subject->user);
 
-        $topicsContext = $topics->map(fn ($t) => "- [id: {$t->id}] {$t->name}: {$t->description}")->implode("\n");
+        $topicsContext = $topics->map(fn($t) => "- [id: {$t->id}] {$t->name}: {$t->description}")->implode("\n");
 
         $response = agent(
             instructions: <<<'PROMPT'
@@ -102,21 +101,18 @@ class GenerateQuestions implements ShouldBeUnique, ShouldQueue
 
         DB::transaction(function () use ($questions, $validTopicIds) {
             foreach ($questions as $q) {
-                if (! in_array($q['topic_id'] ?? null, $validTopicIds, true)) {
+                if (!in_array($q['topic_id'] ?? null, $validTopicIds, true)) {
                     Log::warning('Questão da IA veio com topic_id inválido, ignorando', ['question' => $q]);
-
                     continue;
                 }
 
                 if (count($q['options'] ?? []) < 2) {
                     Log::warning('Questão da IA veio sem opções suficientes, ignorando', ['question' => $q]);
-
                     continue;
                 }
 
-                if (! collect($q['options'])->contains(fn ($o) => $o['is_correct'] ?? false)) {
+                if (!collect($q['options'])->contains(fn($o) => $o['is_correct'] ?? false)) {
                     Log::warning('Questão da IA veio sem nenhuma opção correta, ignorando', ['question' => $q]);
-
                     continue;
                 }
 

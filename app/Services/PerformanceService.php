@@ -17,12 +17,19 @@ class PerformanceService
     public function getAccuracyOverTime(int $userId, int $days = 30): array
     {
         $since = Carbon::now()->subDays($days)->startOfDay();
-
-        $rows = QuestionAttempt::query()->join('questions', 'questions.id', '=', 'question_attempts.question_id')->join('subjects', 'subjects.id', '=', 'questions.subject_id')->where('subjects.user_id', $userId)->where('question_attempts.answered_at', '>=', $since)->selectRaw('DATE(question_attempts.answered_at) as date, COUNT(*) as total, SUM(question_attempts.is_correct) as correct')->groupBy('date')->orderBy('date')->get();
+        $rows = QuestionAttempt::query()
+            ->join('questions', 'questions.id', '=', 'question_attempts.question_id')
+            ->join('subjects', 'subjects.id', '=', 'questions.subject_id')
+            ->where('subjects.user_id', $userId)
+            ->where('question_attempts.answered_at', '>=', $since)
+            ->selectRaw('DATE(question_attempts.answered_at) as date, COUNT(*) as total, SUM(question_attempts.is_correct) as correct')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
 
         return $rows
             ->map(
-                fn ($row) => [
+                fn($row) => [
                     'd' => Carbon::parse($row->date)->format('d/m'),
                     'v' => $row->total > 0 ? (int) round(($row->correct / $row->total) * 100) : 0,
                 ],
@@ -39,7 +46,7 @@ class PerformanceService
     {
         return $this->reviewPriority->forUser($userId)
             ->take($limit)
-            ->map(fn (array $topic): array => [
+            ->map(fn(array $topic): array => [
                 'topic_id' => $topic['topic_id'],
                 'name' => $topic['topic'],
                 'subject' => $topic['subject'],
@@ -91,10 +98,7 @@ class PerformanceService
         return "{$hours}h {$minutes}min";
     }
 
-    /**
-     * É uma medida de desempenho, não de prioridade: o que revisar primeiro quem decide é a
-     * lógica fuzzy (ReviewPriorityService); esta taxa mostra quanto o aluno acerta.
-     */
+    // esta taxa mostra quanto o aluno acerta.
     public function getOverallMastery(int $userId): ?int
     {
         $row = QuestionAttempt::query()

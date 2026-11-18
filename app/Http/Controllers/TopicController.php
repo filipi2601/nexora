@@ -38,7 +38,7 @@ class TopicController extends Controller
                 'ancestors' => $this->ancestorsOf($topic),
 
                 'children' => $topic->children->map(
-                    fn (Topic $child) => [
+                    fn(Topic $child) => [
                         'id' => $child->id,
                         'slug' => $child->slug,
                         'name' => $child->name,
@@ -51,11 +51,6 @@ class TopicController extends Controller
         ]);
     }
 
-    /**
-     * Build the breadcrumb trail from the root down to the immediate parent.
-     *
-     * @return array<int, array{id: int, slug: string, name: string}>
-     */
     protected function ancestorsOf(Topic $topic): array
     {
         $ancestors = [];

@@ -15,20 +15,6 @@ class SubjectService
         return Subject::where('user_id', $userId)->get();
     }
 
-    /**
-     * Subjects with real counts and a study-progress percentage.
-     *
-     * Counts come from withCount (one extra query for the whole page), and the
-     * progress aggregates are fetched grouped by subject so listing a user
-     * with many subjects never becomes an N+1.
-     *
-     * Progress answers "how much of this subject's material the student has
-     * actually worked through": distinct questions answered plus flashcards
-     * with at least one review, over the total of questions and flashcards.
-     * It is 0 while there is nothing to study.
-     *
-     * @return Collection<int, Subject>
-     */
     public function getSubjectsWithStats(int $userId): Collection
     {
         $subjects = Subject::where('user_id', $userId)
@@ -61,26 +47,15 @@ class SubjectService
             ->withCount(['topics', 'flashcards', 'questions'])
             ->first();
 
-        if (! $subject) {
-            return null;
-        }
-
+        if (!$subject) return null;
         return $this->attachProgress(
             (new Subject)->newCollection([$subject])
         )->first();
     }
 
-    /**
-     * Attach the computed progress attribute to a single-subject collection.
-     *
-     * @param  Collection<int, Subject>  $subjects
-     * @return Collection<int, Subject>
-     */
     protected function attachProgress(Collection $subjects): Collection
     {
-        if ($subjects->isEmpty()) {
-            return $subjects;
-        }
+        if ($subjects->isEmpty()) return $subjects;
 
         $subjectIds = $subjects->pluck('id');
 

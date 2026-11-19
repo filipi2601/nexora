@@ -14,13 +14,6 @@ use Illuminate\Support\Collection;
  */
 class ReviewPriorityService
 {
-    /**
-     * As variáveis linguísticas: o universo de cada uma e os 4 pontos [a, b, c, d] de cada termo.
-     *
-     * O grau sobe de a até b, fica em 1 de b até c e desce até d. No triângulo, b = c; nas bordas
-     * do universo, o termo começa ou termina no topo (a = b ou c = d). Os termos vizinhos somam 1
-     * em todo o universo, então todo valor pertence a pelo menos um termo.
-     */
     private const VARIABLES = [
         'acerto' => ['min' => 0, 'max' => 100, 'terms' => [
             'baixo' => [0, 0, 25, 50],
@@ -39,29 +32,19 @@ class ReviewPriorityService
         ]],
     ];
 
-    /**
-     * Matriz de regras: linha = acerto, coluna = recência, célula = prioridade.
-     *
-     * Cada célula é a regra "SE acerto é X E recência é Y ENTÃO prioridade é Z". As 9 células
-     * cobrem todas as combinações, então qualquer entrada dispara ao menos uma regra.
-     */
     public const RULES = [
         'baixo' => ['recente' => 'media', 'media' => 'alta', 'antiga' => 'alta'],
         'medio' => ['recente' => 'baixa', 'media' => 'media', 'antiga' => 'alta'],
         'alto' => ['recente' => 'baixa', 'media' => 'baixa', 'antiga' => 'media'],
     ];
 
-    // A inferência de Mamdani em 4 passos, com tudo o que a tela precisa para explicá-la.
     public function evaluate(float $accuracy, float $daysSinceLastAttempt): array
     {
-        // Passo 1, fuzzificação: o grau de cada entrada em cada um dos seus termos.
         $fuzzified = [
             'acerto' => $this->fuzzify('acerto', $accuracy),
             'recencia' => $this->fuzzify('recencia', $daysSinceLastAttempt),
         ];
 
-        // Passo 2, regras: o E é o mínimo, e cada termo de saída fica com o maior grau
-        // entre as regras que levam a ele.
         $rules = [];
         $activation = ['baixa' => 0.0, 'media' => 0.0, 'alta' => 0.0];
 
@@ -73,8 +56,6 @@ class ReviewPriorityService
             }
         }
 
-        // Passo 3, agregação: em cada ponto z da saída, cada termo é cortado no grau da sua
-        // ativação (mínimo) e os cortes são unidos (máximo).
         $aggregated = [];
 
         foreach (range(0, 100) as $z) {
@@ -87,7 +68,6 @@ class ReviewPriorityService
             $aggregated[] = ['z' => $z, 'degree' => $degree];
         }
 
-        // Passo 4, defuzzificação pelo centróide: Σ z·μ(z) / Σ μ(z) nos pontos do passo 3.
         $weighted = array_sum(array_map(fn(array $point): float => $point['z'] * $point['degree'], $aggregated));
         $centroid = $weighted / array_sum(array_column($aggregated, 'degree'));
         $outputDegrees = $this->fuzzify('prioridade', $centroid);
@@ -120,12 +100,6 @@ class ReviewPriorityService
         ];
     }
 
-    /**
-     * A prioridade de cada tópico que o aluno já praticou, da maior para a menor.
-     *
-     * Com $withExplanation, cada tópico traz também a inferência passo a passo, com os mesmos
-     * números usados para ordenar.
-     */
     public function forUser(int $userId, bool $withExplanation = false): Collection
     {
         return QuestionAttempt::query()
@@ -158,10 +132,6 @@ class ReviewPriorityService
             ->values();
     }
 
-    /**
-     * Grau de pertinência de x num termo [a, b, c, d]: 1 no topo, (x − a)/(b − a) na subida,
-     * (d − x)/(d − c) na descida e 0 fora.
-     */
     private function degree(float $x, array $points): float
     {
         [$a, $b, $c, $d] = $points;
@@ -171,10 +141,6 @@ class ReviewPriorityService
         return 0.0;
     }
 
-    /**
-     * O grau de um valor em cada termo da variável. Valores fora do universo vão para a borda
-     * mais próxima: 45 dias contam como 30.
-     */
     private function fuzzify(string $variable, float $value): array
     {
         ['min' => $min, 'max' => $max, 'terms' => $terms] = self::VARIABLES[$variable];
@@ -183,7 +149,6 @@ class ReviewPriorityService
         return array_map(fn(array $points): float => $this->degree($value, $points), $terms);
     }
 
-    // Uma variável no formato da tela: nome, universo e a lista de termos com seus pontos.
     private function variable(string $name): array
     {
         $terms = [];
